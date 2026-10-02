@@ -1,8 +1,17 @@
 # Ignore node modules
 node_modules/
 
-# Optional: ignore build output
+# Build output
 dist/
 
-# Optional: ignore environment files
+# Prisma generated client
+generated/
+
+# Environment variables
 .env
+
+# Local AI agent skills (Prisma SKILL.md, db-execute.md, etc.)
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
