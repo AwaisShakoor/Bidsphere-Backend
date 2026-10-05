@@ -1,8 +1,12 @@
-# Ignore node modules
-node_modules/
+node_modules
 
-# Optional: ignore build output
-dist/
+/generated/prisma
 
-# Optional: ignore environment files
+# Environment variables
 .env
+
+# AI Agent configuration
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
