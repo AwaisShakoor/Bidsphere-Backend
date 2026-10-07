@@ -2,7 +2,7 @@ export const authPaths = {
   "/api/register": {
     post: {
       tags: ["Auth"],
-      summary: "Register a new user",
+      summary: "Register a new user and send email OTP",
       requestBody: {
         required: true,
         content: {
@@ -21,7 +21,34 @@ export const authPaths = {
         },
       },
       responses: {
-        201: { description: "User registered successfully" },
+        201: { description: "User created (inactive). OTP sent to email" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+
+  "/api/verify-email": {
+    post: {
+      tags: ["Auth"],
+      summary: "Verify email with OTP after register",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["email", "otp"],
+              properties: {
+                email: { type: "string", example: "newtestuser@gmail.com" },
+                otp: { type: "string", example: "123456" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: "Email verified successfully" },
+        400: { description: "Invalid or expired OTP" },
         500: { description: "Internal server error" },
       },
     },

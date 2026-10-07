@@ -1,23 +1,34 @@
-import { forgotPassword, getMe, loginUser, registerUser, resetPassword } from "./auth.service";
+import { forgotPassword, getMe, loginUser, registerUser, resetPassword, verifyEmail } from "./auth.service";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { loginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { Request, Response } from "express";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { VerifyEmailDto } from "./dto/verify-email.dto";
 
 export async function register(req: Request, res: Response) {
-try {
+  try {
     const data = req.body as RegisterDto;
-    const user = await registerUser(data);
-    return res.status(201).json({
-        message: "User registered successfully",
-        user,
-    });
-} catch (error) {
+    const result = await registerUser(data);
+    return res.status(201).json(result);
+  } catch (error) {
     return res.status(500).json({
-        message: "Internal server error",
+      message: "Internal server error",
     });
+  }
 }
+
+export async function verifyEmailHandler(req: Request, res: Response) {
+  try {
+    const data = req.body as VerifyEmailDto;
+    const result = await verifyEmail(data);
+    if (!result.success) {
+      return res.status(400).json({ message: result.message });
+    }
+    return res.status(200).json({ message: result.message });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
 }
 
 export async function login(req: Request, res: Response) {

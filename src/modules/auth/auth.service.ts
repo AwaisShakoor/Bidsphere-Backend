@@ -6,21 +6,33 @@ import jwt from "jsonwebtoken";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { sendOtpEmail } from "../../utils/mail";
+import { VerifyEmailDto } from "./dto/verify-email.dto";
 
-export async function registerUser(registerDto:RegisterDto) {
-    const existingUser =await prisma.user.findUnique({
-        where : { email: registerDto.email },
-    })
+export async function registerUser(registerDto: RegisterDto) {
+    const email = registerDto.email.toLowerCase();
+
+    const existingUser = await prisma.user.findUnique({
+        where: { email },
+    });
     if (existingUser) {
         throw new Error("User already exists");
     }
+
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const otpHash = await bcrypt.hash(otp.toString(), 10);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
     const user = await prisma.user.create({
         data: {
             firstName: registerDto.firstName,
             lastName: registerDto.lastName,
-            email: registerDto.email,
+            email,
             passwordHash: hashedPassword,
+            isActive: false,
+            emailVerifyOtpHash: otpHash,
+            emailVerifyOtpExpiresAt: expiresAt,
+            emailVerifyOtpAttempts: 0,
         },
         select: {
             id: true,
@@ -29,9 +41,66 @@ export async function registerUser(registerDto:RegisterDto) {
             email: true,
             role: true,
             createdAt: true,
-        }
+        },
     });
-    return user;
+
+    await sendOtpEmail(email, otp.toString());
+
+    return {
+        message: "OTP sent to email. Please verify to activate account.",
+        user,
+    };
+}
+
+export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
+    const email = verifyEmailDto.email.toLowerCase();
+
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
+
+    if (!user || !user.emailVerifyOtpHash || !user.emailVerifyOtpExpiresAt) {
+        return { success: false, message: "Invalid or expired OTP" };
+    }
+
+    if (user.isActive) {
+        return { success: false, message: "Email already verified" };
+    }
+
+    if (user.emailVerifyOtpExpiresAt < new Date()) {
+        return { success: false, message: "OTP expired" };
+    }
+
+    if (user.emailVerifyOtpAttempts >= 5) {
+        return { success: false, message: "Too many attempts" };
+    }
+
+    const isOtpValid = await bcrypt.compare(
+        verifyEmailDto.otp,
+        user.emailVerifyOtpHash
+    );
+
+    if (!isOtpValid) {
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerifyOtpAttempts: { increment: 1 },
+            },
+        });
+        return { success: false, message: "Invalid OTP" };
+    }
+
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            isActive: true,
+            emailVerifyOtpHash: null,
+            emailVerifyOtpExpiresAt: null,
+            emailVerifyOtpAttempts: 0,
+        },
+    });
+
+    return { success: true, message: "Email verified successfully" };
 }   
 
 export async function loginUser(loginDto: loginDto) {
@@ -163,9 +232,6 @@ export async function forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
         where: { id: user.id },
         data: {
             passwordHash: hashedPassword,
-            passwordResetOtpHash: null,
-            passwordResetOtpExpiresAt: null,
-            passwordResetOtpAttempts: 0,
         }
     })
     return { success: true, message: "Password reset successfully" };   
