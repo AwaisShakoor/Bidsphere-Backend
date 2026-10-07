@@ -104,8 +104,9 @@ export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
 }   
 
 export async function loginUser(loginDto: loginDto) {
+    const email = loginDto.email.toLowerCase();
     const user = await prisma.user.findUnique({
-        where: { email: loginDto.email },
+        where: { email },
     });
     if(!user || !user.isActive) {
         throw new Error('Invalid email or password');
@@ -232,6 +233,9 @@ export async function forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
         where: { id: user.id },
         data: {
             passwordHash: hashedPassword,
+            passwordResetOtpHash: null,
+            passwordResetOtpExpiresAt: null,
+            passwordResetOtpAttempts: 0,
         }
     })
     return { success: true, message: "Password reset successfully" };   

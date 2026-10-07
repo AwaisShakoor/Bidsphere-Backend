@@ -22,6 +22,7 @@ export const authPaths = {
       },
       responses: {
         201: { description: "User created (inactive). OTP sent to email" },
+        400: { description: "User already exists" },
         500: { description: "Internal server error" },
       },
     },
@@ -75,6 +76,7 @@ export const authPaths = {
       },
       responses: {
         200: { description: "User login successfully (sets token cookie)" },
+        401: { description: "Invalid email or password" },
         500: { description: "Internal server error" },
       },
     },
