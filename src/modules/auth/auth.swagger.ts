@@ -48,7 +48,7 @@ export const authPaths = {
         },
       },
       responses: {
-        200: { description: "Email verified successfully" },
+        200: { description: "Email verified successfully (sets auth cookie)" },
         400: { description: "Invalid or expired OTP" },
         500: { description: "Internal server error" },
       },
@@ -151,7 +151,7 @@ export const authPaths = {
         },
       },
       responses: {
-        200: { description: "Password reset successfully" },
+        200: { description: "Password reset successfully (sets auth cookie)" },
         400: { description: "Invalid or expired OTP" },
         500: { description: "Internal server error" },
       },

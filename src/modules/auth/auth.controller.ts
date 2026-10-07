@@ -23,6 +23,15 @@ function handleAuthError(error: unknown, res: Response) {
   return res.status(500).json({ message: "Internal server error" });
 }
 
+function setAuthCookie(res: Response, token: string) {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 24 * 60 * 60 * 1000,
+  });
+}
+
 export async function register(req: Request, res: Response) {
   try {
     const data = req.body as RegisterDto;
@@ -40,7 +49,11 @@ export async function verifyEmailHandler(req: Request, res: Response) {
     if (!result.success) {
       return res.status(400).json({ message: result.message });
     }
-    return res.status(200).json({ message: result.message });
+    setAuthCookie(res, result.token);
+    return res.status(200).json({
+      message: result.message,
+      user: result.user,
+    });
   } catch (error) {
     return handleAuthError(error, res);
   }
@@ -50,11 +63,7 @@ export async function login(req: Request, res: Response) {
   try {
     const data = req.body as loginDto;
     const result = await loginUser(data);
-    res.cookie("token", result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 24 * 60 * 60 * 1000,
-    });
+    setAuthCookie(res, result.token);
     return res.status(200).json({
       message: "User Login successfully",
       user: result.user,
@@ -115,7 +124,11 @@ export async function resetPasswordHandler(req: Request, res: Response) {
     if (!result.success) {
       return res.status(400).json({ message: result.message });
     }
-    return res.status(200).json({ message: result.message });
+    setAuthCookie(res, result.token);
+    return res.status(200).json({
+      message: result.message,
+      user: result.user,
+    });
   } catch (error) {
     return handleAuthError(error, res);
   }

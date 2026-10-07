@@ -9,7 +9,12 @@ import swaggerUi from 'swagger-ui-express';
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
 
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 

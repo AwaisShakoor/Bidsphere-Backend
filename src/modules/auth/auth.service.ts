@@ -52,6 +52,41 @@ export async function registerUser(registerDto: RegisterDto) {
     };
 }
 
+function createAuthSession(user: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: string;
+    createdAt: Date;
+}) {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET is not set');
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user.id,
+        role: user.role,
+      },
+      secret,
+      { expiresIn: '1d' }
+    );
+
+    return {
+      token,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    };
+}
+
 export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
     const email = verifyEmailDto.email.toLowerCase();
 
@@ -60,19 +95,19 @@ export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
     });
 
     if (!user || !user.emailVerifyOtpHash || !user.emailVerifyOtpExpiresAt) {
-        return { success: false, message: "Invalid or expired OTP" };
+        return { success: false as const, message: "Invalid or expired OTP" };
     }
 
     if (user.isActive) {
-        return { success: false, message: "Email already verified" };
+        return { success: false as const, message: "Email already verified" };
     }
 
     if (user.emailVerifyOtpExpiresAt < new Date()) {
-        return { success: false, message: "OTP expired" };
+        return { success: false as const, message: "OTP expired" };
     }
 
     if (user.emailVerifyOtpAttempts >= 5) {
-        return { success: false, message: "Too many attempts" };
+        return { success: false as const, message: "Too many attempts" };
     }
 
     const isOtpValid = await bcrypt.compare(
@@ -87,10 +122,10 @@ export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
                 emailVerifyOtpAttempts: { increment: 1 },
             },
         });
-        return { success: false, message: "Invalid OTP" };
+        return { success: false as const, message: "Invalid OTP" };
     }
 
-    await prisma.user.update({
+    const activatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
             isActive: true,
@@ -100,7 +135,14 @@ export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
         },
     });
 
-    return { success: true, message: "Email verified successfully" };
+    const session = createAuthSession(activatedUser);
+
+    return {
+        success: true as const,
+        message: "Email verified successfully",
+        token: session.token,
+        user: session.user,
+    };
 }   
 
 export async function loginUser(loginDto: loginDto) {
@@ -116,31 +158,7 @@ export async function loginUser(loginDto: loginDto) {
         throw new Error('Invalid email or password');
     }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new Error('JWT_SECRET is not set');
-    }
-    
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        role: user.role,
-      },
-      secret,
-      { expiresIn: '1d' }
-    );
-    
-    return {
-      token,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        createdAt: user.createdAt,
-      },
-    };
+    return createAuthSession(user);
 }
 
 export async function getMe(token:string) {
@@ -197,39 +215,33 @@ export async function forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     return { success: true, message: 'OTP sent to email' };
 }
 
-    export async function resetPassword(resetPasswordDto:ResetPasswordDto) {
-        // Make email consistant
-        const email = resetPasswordDto.email.toLowerCase();
+export async function resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const email = resetPasswordDto.email.toLowerCase();
 
-        //find user by email
-        const user = await prisma.user.findUnique({
-            where: { email}
-        })
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
 
-      // 3) No user, inactive, or no OTP saved
     if (!user || !user.isActive || !user.passwordResetOtpHash || !user.passwordResetOtpExpiresAt) {
-        return { success: false, message: "Invalid or expired OTP" };
+        return { success: false as const, message: "Invalid or expired OTP" };
     }
 
-    //otp older than 10 minutes
-    if(user.passwordResetOtpExpiresAt < new Date()) {
-        return { success: false, message: "OTP expired" };
+    if (user.passwordResetOtpExpiresAt < new Date()) {
+        return { success: false as const, message: "OTP expired" };
     }
 
-    //too many attempts
     if (user.passwordResetOtpAttempts >= 5) {
-        return { success: false, message: "Too many attempts" };
+        return { success: false as const, message: "Too many attempts" };
     }
 
-    //Compare hashed otp
     const isOtpValid = await bcrypt.compare(resetPasswordDto.otp, user.passwordResetOtpHash);
-    if(!isOtpValid) {
-        return { success: false, message: "Invalid OTP" };
+    if (!isOtpValid) {
+        return { success: false as const, message: "Invalid OTP" };
     }
 
     //correct otp, reset password
     const hashedPassword = await bcrypt.hash(resetPasswordDto.newPassword, 10);
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
         where: { id: user.id },
         data: {
             passwordHash: hashedPassword,
@@ -238,5 +250,13 @@ export async function forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
             passwordResetOtpAttempts: 0,
         }
     })
-    return { success: true, message: "Password reset successfully" };   
+
+    const session = createAuthSession(updatedUser);
+
+    return {
+        success: true as const,
+        message: "Password reset successfully",
+        token: session.token,
+        user: session.user,
+    };
 }
