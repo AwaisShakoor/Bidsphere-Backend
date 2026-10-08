@@ -5,6 +5,7 @@ import authRouter from './src/modules/auth/auth.routes';
 import cookieParser from 'cookie-parser';
 import swaggerSpec from './src/config/swagger';
 import swaggerUi from 'swagger-ui-express';
+import { connectRedis } from './src/config/redis';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -38,6 +39,8 @@ app.get('/', (_request, response) => {
 app.get('/health', (_request, response) => {
   response.json({ status: 'ok' });
 });
+
+connectRedis().then(() => console.log("Redis connected"));
 
 app.listen(port, () => {
   console.log(`Bidsphere API listening on port ${port}`);

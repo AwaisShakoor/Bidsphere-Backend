@@ -10,11 +10,27 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-export async function sendOtpEmail(to: string, otp: string) {
+async function sendOtpEmail(to: string, subject: string, text: string) {
   await transporter.sendMail({
     from: process.env.MAIL_FROM,
     to,
-    subject: "BidSphere password reset OTP",
-    text: `Your password reset OTP is ${otp}. This OTP will expire in 10 minutes.`,
+    subject,
+    text,
   });
+}
+
+export async function sendEmailVerificationOtp(to: string, otp: string) {
+  await sendOtpEmail(
+    to,
+    "BidSphere email verification OTP",
+    `Your email verification OTP is ${otp}. Use this code to activate your account. This OTP will expire in 10 minutes.`,
+  );
+}
+
+export async function sendPasswordResetOtp(to: string, otp: string) {
+  await sendOtpEmail(
+    to,
+    "BidSphere password reset OTP",
+    `Your password reset OTP is ${otp}. This OTP will expire in 10 minutes.`,
+  );
 }

@@ -5,8 +5,10 @@ import { loginDto } from "./dto/login.dto";
 import jwt from "jsonwebtoken";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
-import { sendOtpEmail } from "../../utils/mail";
+import { sendEmailVerificationOtp, sendPasswordResetOtp } from "../../utils/mail";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
+import { randomBytes } from "crypto";
+import { redis } from "../../config/redis";
 
 export async function registerUser(registerDto: RegisterDto) {
     const email = registerDto.email.toLowerCase();
@@ -44,7 +46,7 @@ export async function registerUser(registerDto: RegisterDto) {
         },
     });
 
-    await sendOtpEmail(email, otp.toString());
+    await sendEmailVerificationOtp(email, otp.toString());
 
     return {
         message: "OTP sent to email. Please verify to activate account.",
@@ -52,7 +54,7 @@ export async function registerUser(registerDto: RegisterDto) {
     };
 }
 
-function createAuthSession(user: {
+export async function createAuthSession(user: {
     id: string;
     firstName: string;
     lastName: string;
@@ -71,11 +73,19 @@ function createAuthSession(user: {
         role: user.role,
       },
       secret,
-      { expiresIn: '1d' }
+      { expiresIn: '15m' }
     );
+
+    const refreshToken = randomBytes(32).toString('hex');
+    const weekInSeconds = 60 * 60 * 24 * 7;
+
+    await redis.set(`refreshToken:${refreshToken}`, user.id, {EX: weekInSeconds})
+    await redis.sAdd(`user-refresh:${user.id}`, refreshToken)
+    await redis.expire(`user-refresh:${user.id}`, weekInSeconds)
 
     return {
       token,
+      refreshToken,
       user: {
         id: user.id,
         firstName: user.firstName,
@@ -85,6 +95,31 @@ function createAuthSession(user: {
         createdAt: user.createdAt,
       },
     };
+}
+
+export async function refreshToken(refreshToken: string) {
+    const userId = await redis.getDel(`refreshToken:${refreshToken}`);
+    if(!userId) {
+        throw new Error('Unauthorized');
+    }
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+    });
+    if(!user || !user.isActive) {
+        throw new Error('Unauthorized');
+    }
+    return await createAuthSession(user);
+}
+
+export async function logoutUser(refreshTokenCookie?: string) {
+    if (!refreshTokenCookie) {
+        return;
+    }
+
+    const userId = await redis.getDel(`refreshToken:${refreshTokenCookie}`);
+    if (userId) {
+        await redis.sRem(`user-refresh:${userId}`, refreshTokenCookie);
+    }
 }
 
 export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
@@ -135,12 +170,13 @@ export async function verifyEmail(verifyEmailDto: VerifyEmailDto) {
         },
     });
 
-    const session = createAuthSession(activatedUser);
+    const session = await createAuthSession(activatedUser);
 
     return {
         success: true as const,
         message: "Email verified successfully",
         token: session.token,
+        refreshToken: session.refreshToken,
         user: session.user,
     };
 }   
@@ -158,7 +194,7 @@ export async function loginUser(loginDto: loginDto) {
         throw new Error('Invalid email or password');
     }
 
-    return createAuthSession(user);
+    return await createAuthSession(user);
 }
 
 export async function getMe(token:string) {
@@ -210,7 +246,7 @@ export async function forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
             passwordResetOtpAttempts: 0,
         }
     })
-    await sendOtpEmail(email, otp.toString());
+    await sendPasswordResetOtp(email, otp.toString());
 
     return { success: true, message: 'OTP sent to email' };
 }
@@ -251,12 +287,13 @@ export async function resetPassword(resetPasswordDto: ResetPasswordDto) {
         }
     })
 
-    const session = createAuthSession(updatedUser);
+    const session = await createAuthSession(updatedUser);
 
     return {
         success: true as const,
         message: "Password reset successfully",
         token: session.token,
+        refreshToken: session.refreshToken,
         user: session.user,
     };
 }

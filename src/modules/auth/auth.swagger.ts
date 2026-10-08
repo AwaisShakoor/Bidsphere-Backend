@@ -82,12 +82,33 @@ export const authPaths = {
     },
   },
 
+  "/api/refresh": {
+    post: {
+      tags: ["Auth"],
+      summary: "Issue a new access token from the refreshToken cookie",
+      parameters: [
+        {
+          in: "cookie",
+          name: "refreshToken",
+          required: true,
+          schema: { type: "string" },
+          description: "Set by login, verify-email, or reset-password",
+        },
+      ],
+      responses: {
+        200: { description: "New token and refreshToken cookies set" },
+        401: { description: "Missing or invalid refresh token" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+
   "/api/logout": {
     delete: {
       tags: ["Auth"],
-      summary: "Logout user",
+      summary: "Logout user and clear token and refreshToken cookies",
       responses: {
-        200: { description: "User logout successfully" },
+        200: { description: "Both cookies cleared and refresh token removed from Redis" },
         500: { description: "Internal server error" },
       },
     },
