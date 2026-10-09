@@ -3,4 +3,5 @@ export type RegisterDto = {
     lastName: string;
     email: string;
     password: string;
+    role?: "BUYER" | "SELLER";
 }

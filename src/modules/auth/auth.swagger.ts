@@ -21,7 +21,7 @@ export const authPaths = {
         },
       },
       responses: {
-        201: { description: "User created (inactive). OTP sent to email" },
+        201: { description: "User created (inactive). OTP sent successfully." },
         400: { description: "User already exists" },
         500: { description: "Internal server error" },
       },
@@ -144,7 +144,7 @@ export const authPaths = {
         },
       },
       responses: {
-        200: { description: "OTP sent to email" },
+        200: { description: "OTP sent successfully." },
         400: { description: "User not found" },
         500: { description: "Internal server error" },
       },

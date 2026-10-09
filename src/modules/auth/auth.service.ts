@@ -20,6 +20,11 @@ export async function registerUser(registerDto: RegisterDto) {
         throw new Error("User already exists");
     }
 
+    const role = registerDto.role ?? "BUYER";
+    if(role !== "BUYER" && role !== "SELLER") {
+        throw new Error("Invalid role");
+    }
+
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otpHash = await bcrypt.hash(otp.toString(), 10);
@@ -30,6 +35,7 @@ export async function registerUser(registerDto: RegisterDto) {
             firstName: registerDto.firstName,
             lastName: registerDto.lastName,
             email,
+            role,
             passwordHash: hashedPassword,
             isActive: false,
             emailVerifyOtpHash: otpHash,
@@ -49,7 +55,7 @@ export async function registerUser(registerDto: RegisterDto) {
     await sendEmailVerificationOtp(email, otp.toString());
 
     return {
-        message: "OTP sent to email. Please verify to activate account.",
+        message: "OTP sent successfully.",
         user,
     };
 }
@@ -248,7 +254,7 @@ export async function forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     })
     await sendPasswordResetOtp(email, otp.toString());
 
-    return { success: true, message: 'OTP sent to email' };
+    return { success: true, message: 'OTP sent successfully.' };
 }
 
 export async function resetPassword(resetPasswordDto: ResetPasswordDto) {
