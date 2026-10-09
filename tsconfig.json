@@ -9,5 +9,6 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["app.ts", "src/**/*"]
+  "include": ["app.ts", "src/**/*", "generated/**/*"],
+  "exclude": ["node_modules", "dist", "src/app.ts"]
 }
