@@ -24,7 +24,7 @@ function handleAuthError(error: unknown, res: Response) {
 }
 
 function setAuthCookie(res: Response, token: string, refreshToken: string) {
-  res.cookie("token", token, {
+  res.cookie("accessToken", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -99,7 +99,7 @@ export async function login(req: Request, res: Response) {
 export async function logout(req: Request, res: Response) {
   try {
     await logoutUser(req.cookies.refreshToken);
-    res.clearCookie("token");
+    res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
     return res.status(200).json({
       message: "User Logout successfully",
@@ -111,7 +111,7 @@ export async function logout(req: Request, res: Response) {
 
 export async function me(req: Request, res: Response) {
   try {
-    const token = req.cookies.token;
+    const token = req.cookies.accessToken;
     if (!token) {
       return res.status(401).json({
         message: "Unauthorized",

@@ -75,7 +75,7 @@ export const authPaths = {
         },
       },
       responses: {
-        200: { description: "User login successfully (sets token cookie)" },
+        200: { description: "User login successfully (sets accessToken cookie)" },
         401: { description: "Invalid email or password" },
         500: { description: "Internal server error" },
       },
@@ -106,7 +106,7 @@ export const authPaths = {
   "/api/logout": {
     delete: {
       tags: ["Auth"],
-      summary: "Logout user and clear token and refreshToken cookies",
+      summary: "Logout user and clear accessToken and refreshToken cookies",
       responses: {
         200: { description: "Both cookies cleared and refresh token removed from Redis" },
         500: { description: "Internal server error" },
