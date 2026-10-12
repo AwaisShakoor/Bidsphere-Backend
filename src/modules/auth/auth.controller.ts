@@ -12,7 +12,10 @@ function handleAuthError(error: unknown, res: Response) {
   if (message === "User already exists") {
     return res.status(400).json({ message });
   }
-  if (message === "Invalid email or password" || message === "Unauthorized") {
+  if (message === "Invalid email or password") {
+    return res.status(401).json({ message: "Invalid email or password" });
+  }
+  if (message === "Unauthorized") {
     return res.status(401).json({ message: "Unauthorized" });
   }
   if (message === "User not found") {
