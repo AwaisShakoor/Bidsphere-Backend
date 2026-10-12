@@ -31,7 +31,7 @@ function setAuthCookie(res: Response, token: string, refreshToken: string) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 24 * 60 * 60 * 1000,
+    maxAge: 15 * 60 * 1000, // match JWT expiresIn: 15m
   });
 
   res.cookie("refreshToken", refreshToken, {
@@ -114,13 +114,7 @@ export async function logout(req: Request, res: Response) {
 
 export async function me(req: Request, res: Response) {
   try {
-    const token = req.cookies.accessToken;
-    if (!token) {
-      return res.status(401).json({
-        message: "Unauthorized",
-      });
-    }
-    const user = await getMe(token);
+    const user = await getMe(req.user!.userId);
     return res.status(200).json({
       message: "User details",
       user,

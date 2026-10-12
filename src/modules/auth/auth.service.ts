@@ -203,19 +203,12 @@ export async function loginUser(loginDto: loginDto) {
     return await createAuthSession(user);
 }
 
-export async function getMe(token:string) {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-        throw new Error('JWT_SECRET is not set');
-    }
-
-    const payload = jwt.verify(token, secret) as { userId: string; role: string };
-
+export async function getMe(userId: string) {
     const user = await prisma.user.findUnique({
-        where: { id: payload.userId },
+        where: { id: userId },
     });
-    if(!user) {
-        throw new Error('User not found');
+    if (!user) {
+        throw new Error("User not found");
     }
     return user;
 }
