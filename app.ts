@@ -6,6 +6,9 @@ import cookieParser from 'cookie-parser';
 import swaggerSpec from './src/config/swagger';
 import swaggerUi from 'swagger-ui-express';
 import { connectRedis } from './src/config/redis';
+import categoryRouter from './src/modules/category/category.routes';
+import itemRouter from './src/modules/items/item.router';
+import auctionRouter from './src/modules/auction/auction.router';
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -31,7 +34,9 @@ app.use(
   })
 );
 app.use("/api", authRouter);
-
+app.use("/api", categoryRouter);
+app.use("/api", itemRouter);
+app.use("/api", auctionRouter);
 app.get('/', (_request, response) => {
   response.json({ message: 'Bidsphere API is running' });
 });

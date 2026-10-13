@@ -1,5 +1,8 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import { authPaths } from "../modules/auth/auth.swagger";
+import { categoryPaths } from "../modules/category/category.swagger";
+import { itemPaths } from "../modules/items/item.swagger";
+import { auctionPaths } from "../modules/auction/auction.swagger";
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -16,6 +19,9 @@ const options: swaggerJsdoc.Options = {
     ],
     paths: {
       ...authPaths,
+      ...categoryPaths,
+      ...itemPaths,
+      ...auctionPaths,
     },
   },
   apis: [],
