@@ -150,6 +150,7 @@ model Item {
   bids   Bid[]
   payment Payment?
   images   ItemImage[]
+  notifications Notification[]
 
   @@index([sellerId])
   @@index([categoryId])
@@ -163,11 +164,8 @@ model ItemImage {
   itemId             String   @map("item_id") @db.Uuid
   cloudinaryPublicId String   @map("cloudinary_public_id")
   url                String
-  originalFilename   String   @map("original_filename")
   fileSize           Int      @map("file_size")
   mimeType           String   @map("mime_type")
-  width              Int?
-  height             Int?
   sortOrder          Int      @default(0) @map("sort_order")
   uploadedAt         DateTime @default(now()) @map("uploaded_at") @db.Timestamptz()
 
@@ -224,12 +222,14 @@ model Notification {
   userId    String           @map("user_id") @db.Uuid
   type      NotificationType
   auctionId String?          @map("auction_id") @db.Uuid
+  itemId    String?          @map("item_id") @db.Uuid
   message   String           @db.VarChar(255)
   createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz()
 
   // Relations
   user    User     @relation(fields: [userId], references: [id])
   auction Auction? @relation(fields: [auctionId], references: [id])
+  item    Item?    @relation(fields:[itemId], references:[id])     
 
   @@index([userId, createdAt])
   @@map("notifications")
