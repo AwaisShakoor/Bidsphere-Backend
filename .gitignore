@@ -1,11 +1,15 @@
 node_modules
 
-/generated/prisma
+# Build output
+dist/
+
+# Prisma generated client
+generated/
 
 # Environment variables
 .env
 
-# AI Agent configuration
+# Local AI agent skills (Prisma SKILL.md, db-execute.md, etc.)
 .agents/
 .claude/
 .windsurf/

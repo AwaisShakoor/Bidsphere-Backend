@@ -90,6 +90,12 @@ model User {
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         UserRole  @default(BUYER) @map("role")
   isActive     Boolean   @default(true) @map("is_active")
+  passwordResetOtpHash      String?   @map("password_reset_otp_hash") @db.VarChar(255)
+  passwordResetOtpExpiresAt DateTime? @map("password_reset_otp_expires_at") @db.Timestamptz()
+  passwordResetOtpAttempts  Int       @default(0) @map("password_reset_otp_attempts")
+  emailVerifyOtpHash      String?   @map("email_verify_otp_hash") @db.VarChar(255)
+  emailVerifyOtpExpiresAt DateTime? @map("email_verify_otp_expires_at") @db.Timestamptz()
+  emailVerifyOtpAttempts  Int       @default(0) @map("email_verify_otp_attempts")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 
