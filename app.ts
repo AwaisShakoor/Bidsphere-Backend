@@ -31,7 +31,6 @@ app.use(
   })
 );
 app.use("/api", authRouter);
-
 app.get('/', (_request, response) => {
   response.json({ message: 'Bidsphere API is running' });
 });
