@@ -179,6 +179,8 @@ model ItemImage {
 model Auction {
   id                    String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sellerId              String        @map("seller_id") @db.Uuid
+  title                 String        @default("Untitled") @db.VarChar(100)
+  description           String        @default("") @db.Text
   startTime             DateTime      @map("start_time") @db.Timestamptz()
   endTime               DateTime      @map("end_time") @db.Timestamptz()
   status                AuctionStatus @default(DRAFT) @map("status")
