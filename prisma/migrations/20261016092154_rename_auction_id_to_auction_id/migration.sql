@@ -1,0 +1,22 @@
+/*
+  Warnings:
+
+  - You are about to drop the column `auctionId` on the `items` table. All the data in the column will be lost.
+  - Added the required column `auction_id` to the `items` table without a default value. This is not possible if the table is not empty.
+
+*/
+-- DropForeignKey
+ALTER TABLE "items" DROP CONSTRAINT "items_auctionId_fkey";
+
+-- DropIndex
+DROP INDEX "items_auctionId_idx";
+
+-- AlterTable
+ALTER TABLE "items" DROP COLUMN "auctionId",
+ADD COLUMN     "auction_id" UUID NOT NULL;
+
+-- CreateIndex
+CREATE INDEX "items_auction_id_idx" ON "items"("auction_id");
+
+-- AddForeignKey
+ALTER TABLE "items" ADD CONSTRAINT "items_auction_id_fkey" FOREIGN KEY ("auction_id") REFERENCES "auctions"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
