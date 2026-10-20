@@ -1,4 +1,4 @@
-import { prisma } from "../../../config/db";
+import { prisma } from "../../config/db";
 import { AuctionErrors } from "./auction.errors";
 import { CreateAuctionDto } from "./create-auction.dto";
 import { UpdateAuctionDto } from "./update-auction.dto";
@@ -103,4 +103,24 @@ export async function deleteAuction(sellerId: string, auctionId: string) {
   return prisma.auction.delete({
     where: { id: auctionId },
   });
+}
+
+export async function submitAuction(sellerId: string, auctionId: string) {
+  const existing = await prisma.auction.findFirst({
+    where: { id: auctionId, sellerId },
+    include: { items: { select: { id: true } } },
+  });
+
+  if (!existing) {
+    throw new Error(AuctionErrors.NOT_FOUND);
+  }
+
+  if (existing.status !== "DRAFT") {
+    throw new Error(AuctionErrors.ONLY_DRAFT_SUBMIT);
+  }
+
+  return prisma.auction.update({
+    where: { id: auctionId },
+    data: { status:"PENDING_APPROVAL" }
+  })
 }

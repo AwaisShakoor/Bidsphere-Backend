@@ -9,4 +9,22 @@ export const categoryPaths = {
         },
       },
     },
+    "/api/category/{slug}/items": {
+      get: {
+        tags: ["Categories"],
+        summary: "List active items in a category",
+        parameters: [
+          {
+            in: "path",
+            name: "slug",
+            required: true,
+            schema: { type: "string", example: "electronics" },
+          },
+        ],
+        responses: {
+          200: { description: "Active items for this category" },
+          500: { description: "Category not found / internal server error" },
+        },
+      },
+    },
   };

@@ -6,6 +6,7 @@ import {
   deleteAuction,
   getAuctionById,
   getMyAuctions,
+  submitAuction,
   updateAuction,
 } from "./auction.services";
 import { UpdateAuctionDto } from "./update-auction.dto";
@@ -86,6 +87,22 @@ export async function deleteAuctionController(req: Request, res: Response) {
 
     return res.status(200).json({
       message: "Auction deleted successfully",
+      auction,
+    });
+  } catch (error) {
+    return handleAuctionError(error, res);
+  }
+}
+
+export async function submitAuctionController(req: Request, res: Response) {
+  try {
+    const sellerId = req.user!.userId;
+    const auctionId = req.params.id;
+
+    const auction = await submitAuction(sellerId, auctionId as string);
+
+    return res.status(200).json({
+      message: "Auction submitted successfully",
       auction,
     });
   } catch (error) {
