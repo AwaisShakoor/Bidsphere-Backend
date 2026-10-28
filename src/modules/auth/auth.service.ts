@@ -206,6 +206,15 @@ export async function loginUser(loginDto: loginDto) {
 export async function getMe(userId: string) {
     const user = await prisma.user.findUnique({
         where: { id: userId },
+        select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            role: true,
+            isActive: true,
+            createdAt: true,
+        },
     });
     if (!user) {
         throw new Error("User not found");

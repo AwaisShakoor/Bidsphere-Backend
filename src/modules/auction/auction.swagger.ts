@@ -153,7 +153,9 @@ export const auctionPaths = {
       ],
       responses: {
         200: { description: "Auction submitted for approval" },
-        400: { description: "Only a draft can be submitted / auction has no items" },
+        400: {
+          description: "Only a draft can be submitted / auction has no items",
+        },
         401: { description: "Unauthorized" },
         404: { description: "Auction not found" },
         500: { description: "Internal server error" },

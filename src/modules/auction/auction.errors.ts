@@ -6,7 +6,7 @@ export const AuctionErrors = {
   END_BEFORE_START: "Start time must be before end time",
   ONLY_DRAFT_UPDATE: "Only draft auctions can be updated",
   ONLY_DRAFT_DELETE: "Only draft auctions can be deleted",
-  ONLY_DRAFT_SUBMIT: "Only draft auctions can be submitted",
+  ONLY_DRAFT_SUBMIT: "Only draft or rejected auctions can be submitted",
 } as const;
 
 export function handleAuctionError(error: unknown, res: Response) {
@@ -21,7 +21,8 @@ export function handleAuctionError(error: unknown, res: Response) {
     message === AuctionErrors.INVALID_TIMES ||
     message === AuctionErrors.END_BEFORE_START ||
     message === AuctionErrors.ONLY_DRAFT_UPDATE ||
-    message === AuctionErrors.ONLY_DRAFT_DELETE
+    message === AuctionErrors.ONLY_DRAFT_DELETE ||
+    message === AuctionErrors.ONLY_DRAFT_SUBMIT
   ) {
     return res.status(400).json({ message });
   }
