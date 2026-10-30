@@ -62,7 +62,7 @@ export const itemPaths = {
       },
       responses: {
         201: { description: "Item created successfully" },
-        400: { description: "Items can only be added to a draft auction" },
+        400: { description: "Items can only be added to a draft or rejected auction" },
         401: { description: "Unauthorized" },
         404: { description: "Auction not found" },
         500: { description: "Internal server error" },

@@ -3,6 +3,7 @@ import { authPaths } from "../modules/auth/auth.swagger";
 import { auctionPaths } from "../modules/auction/auction.swagger";
 import { categoryPaths } from "../modules/categories/categories.swagger";
 import { itemPaths } from "../modules/items/items.swagger";
+import { adminPaths } from "../modules/admin/admin.swagger";
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -22,6 +23,7 @@ const options: swaggerJsdoc.Options = {
       ...auctionPaths,
       ...categoryPaths,
       ...itemPaths,
+      ...adminPaths,
     },
   },
   apis: [],

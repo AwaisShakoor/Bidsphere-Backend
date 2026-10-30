@@ -1,4 +1,7 @@
-import { deleteFromCloudinary, uploadToCloudinary } from "../../config/cloudinary";
+import {
+  deleteFromCloudinary,
+  uploadToCloudinary,
+} from "../../config/cloudinary";
 import { prisma } from "../../config/db";
 import { CreateItemsDto } from "./create-items.dto";
 import { UpdateItemsDto } from "./update-items.dto";
@@ -17,8 +20,8 @@ export async function createItem(
     throw new Error("Auction not found");
   }
 
-  if (auction.status !== "DRAFT") {
-    throw new Error("Items can only be added to a draft auction");
+  if (auction.status !== "DRAFT" && auction.status !== "REJECTED") {
+    throw new Error("Items can only be added to a draft or rejected auction");
   }
 
   const images = [];

@@ -9,6 +9,7 @@ import { connectRedis } from "./src/config/redis";
 import auctionRouter from "./src/modules/auction/auction.router";
 import categoriesRouter from "./src/modules/categories/categories.router";
 import itemsRouter from "./src/modules/items/items.router";
+import adminRouter from "./src/modules/admin/admin.route";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -37,6 +38,7 @@ app.use("/api", authRouter);
 app.use("/api", auctionRouter);
 app.use("/api", categoriesRouter);
 app.use("/api", itemsRouter);
+app.use("/api/admin", adminRouter);
 
 app.get("/", (_request, response) => {
   response.json({ message: "Bidsphere API is running" });

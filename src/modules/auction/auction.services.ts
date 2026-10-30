@@ -60,7 +60,7 @@ export async function updateAuction(
     throw new Error(AuctionErrors.NOT_FOUND);
   }
 
-  if (existing.status !== "DRAFT") {
+  if (existing.status !== "DRAFT" && existing.status !== "REJECTED") {
     throw new Error(AuctionErrors.ONLY_DRAFT_UPDATE);
   }
 
@@ -115,12 +115,12 @@ export async function submitAuction(sellerId: string, auctionId: string) {
     throw new Error(AuctionErrors.NOT_FOUND);
   }
 
-  if (existing.status !== "DRAFT") {
+  if (existing.status !== "DRAFT" && existing.status !== "REJECTED") {
     throw new Error(AuctionErrors.ONLY_DRAFT_SUBMIT);
   }
 
   return prisma.auction.update({
     where: { id: auctionId },
-    data: { status:"PENDING_APPROVAL" }
-  })
+    data: { status: "PENDING_APPROVAL", rejectionReason: null },
+  });
 }
