@@ -3,6 +3,7 @@ import {
   uploadToCloudinary,
 } from "../../config/cloudinary";
 import { prisma } from "../../config/db";
+import { closeEndedAuctions } from "../auction/auction.services";
 import { CreateItemsDto } from "./create-items.dto";
 import { UpdateItemsDto } from "./update-items.dto";
 
@@ -151,4 +152,112 @@ export async function deletItem(itemId: string) {
       id: itemId,
     },
   });
+}
+
+export async function getPublicItems() {
+  await closeEndedAuctions();
+  const now = new Date();
+
+  return prisma.item.findMany({
+    where: {
+      auction: {
+        status: "ACTIVE",
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      startingPrice: true,
+      reservePrice: true,
+      currentBid: true,
+      itemCondition: true,
+      shippingType: true,
+      shippingCost: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+      auction: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getPublicItemById(itemId: string) {
+  await closeEndedAuctions();
+  const now = new Date();
+
+  const item = await prisma.item.findFirst({
+    where: {
+      id: itemId,
+      auction: {
+        status: "ACTIVE",
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      startingPrice: true,
+      reservePrice: true,
+      currentBid: true,
+      itemCondition: true,
+      shippingType: true,
+      shippingCost: true,
+      shippingEstimatedDays: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+      auction: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+      seller: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    throw new Error("Item not found");
+  }
+
+  return item;
 }

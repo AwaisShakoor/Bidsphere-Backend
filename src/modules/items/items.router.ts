@@ -1,9 +1,12 @@
 import { Router } from "express";
-import { createItemController, deleteItemController, getItemController, getItemsController, updateItemController } from "./items.controller";
+import { createItemController, deleteItemController, getItemController, getItemsController, getPublicItemByIdController, getPublicItemsController, updateItemController } from "./items.controller";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import { uploadItemImages } from "../../middleware/upload.middleware";
 
 const itemsRouter = Router();
+
+itemsRouter.get("/public/items", getPublicItemsController);
+itemsRouter.get("/public/items/:itemId", getPublicItemByIdController);
 
 itemsRouter.post("/:auctionId/items", authMiddleware, uploadItemImages, createItemController)
 itemsRouter.get("/:auctionId/items", authMiddleware, getItemsController)
