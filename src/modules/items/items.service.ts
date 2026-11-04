@@ -162,8 +162,6 @@ export async function getPublicItems() {
     where: {
       auction: {
         status: "ACTIVE",
-        startTime: { lte: now },
-        endTime: { gt: now },
       },
     },
     select: {
@@ -212,8 +210,6 @@ export async function getPublicItemById(itemId: string) {
       id: itemId,
       auction: {
         status: "ACTIVE",
-        startTime: { lte: now },
-        endTime: { gt: now },
       },
     },
     select: {
