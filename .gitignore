@@ -6,8 +6,15 @@ dist/
 # Prisma generated client
 generated/
 
-# Environment variables
+# Local environment variables
 .env
+.env.example
+
+# Local Docker compose file
+docker-compose.yml
+
+# Local Postman collection. Testing stays in the Postman app.
+postman/
 
 # Local AI agent skills (Prisma SKILL.md, db-execute.md, etc.)
 .agents/

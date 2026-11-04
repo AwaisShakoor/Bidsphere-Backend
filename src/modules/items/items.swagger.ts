@@ -62,7 +62,9 @@ export const itemPaths = {
       },
       responses: {
         201: { description: "Item created successfully" },
-        400: { description: "Items can only be added to a draft or rejected auction" },
+        400: {
+          description: "Items can only be added to a draft or rejected auction",
+        },
         401: { description: "Unauthorized" },
         404: { description: "Auction not found" },
         500: { description: "Internal server error" },
@@ -80,7 +82,7 @@ export const itemPaths = {
         },
       ],
       responses: {
-        200: { description: "Items fetched successfully" },
+        200: { description: "Items retrieved successfully" },
         401: { description: "Unauthorized" },
         500: { description: "Internal server error" },
       },
@@ -105,7 +107,7 @@ export const itemPaths = {
         },
       ],
       responses: {
-        200: { description: "Item fetched successfully" },
+        200: { description: "Item retrieved successfully" },
         401: { description: "Unauthorized" },
         500: { description: "Internal server error" },
       },
@@ -195,6 +197,32 @@ export const itemPaths = {
         200: { description: "Item deleted successfully" },
         401: { description: "Unauthorized" },
         500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/public/items": {
+    get: {
+      tags: ["Items"],
+      summary: "List public items",
+      responses: {
+        200: { description: "Items retrieved successfully" },
+      },
+    },
+  },
+  "/api/public/items/{itemId}": {
+    get: {
+      tags: ["Items"],
+      summary: "Get one public item",
+      parameters: [
+        {
+          in: "path",
+          name: "itemId",
+          required: true,
+          schema: { type: "string" },
+        },
+      ],
+      responses: {
+        200: { description: "Item retrieved successfully" },
       },
     },
   },

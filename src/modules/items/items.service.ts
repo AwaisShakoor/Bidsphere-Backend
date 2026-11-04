@@ -152,3 +152,101 @@ export async function deletItem(itemId: string) {
     },
   });
 }
+
+export async function getPublicItems() {
+  return prisma.item.findMany({
+    where: {
+      auction: { status: "ACTIVE" },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      startingPrice: true,
+      reservePrice: true,
+      currentBid: true,
+      itemCondition: true,
+      shippingType: true,
+      shippingCost: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+      auction: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getPublicItemById(itemId: string) {
+  const item = await prisma.item.findFirst({
+    where: {
+      id: itemId,
+      auction: { status: "ACTIVE" },
+    },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      startingPrice: true,
+      reservePrice: true,
+      currentBid: true,
+      itemCondition: true,
+      shippingType: true,
+      shippingCost: true,
+      shippingEstimatedDays: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+        },
+      },
+      images: {
+        select: {
+          id: true,
+          url: true,
+        },
+      },
+      auction: {
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          startTime: true,
+          endTime: true,
+        },
+      },
+      seller: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+    },
+  });
+
+  if (!item) {
+    throw new Error("Item not found");
+  }
+
+  return item;
+}

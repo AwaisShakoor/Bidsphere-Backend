@@ -5,6 +5,8 @@ import {
   deletItem,
   getItem,
   getItems,
+  getPublicItemById,
+  getPublicItems,
   updateItem,
 } from "./items.service";
 import { handleItemError } from "./items.errors";
@@ -32,7 +34,7 @@ export async function getItemsController(req: Request, res: Response) {
     const auctionId = req.params.auctionId;
     const items = await getItems(auctionId as string);
     return res.status(200).json({
-      message: "Items fetched successfully",
+      message: "Items retrieved successfully",
       items,
     });
   } catch (error) {
@@ -45,7 +47,7 @@ export async function getItemController(req: Request, res: Response) {
     const itemId = req.params.itemId;
     const item = await getItem(itemId as string);
     return res.status(200).json({
-      message: "Item fetched successfully",
+      message: "Item retrieved successfully",
       item,
     });
   } catch (error) {
@@ -79,5 +81,30 @@ export async function deleteItemController(req: Request, res: Response) {
     });
   } catch (error) {
     return handleItemError(error, res);
+  }
+}
+
+export async function getPublicItemsController(req: Request, res: Response) {
+  try {
+    const items = await getPublicItems();
+    return res.status(200).json({
+      message: "Items retrieved successfully",
+      items,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function getPublicItemByIdController(req: Request, res: Response) {
+  try {
+    const itemId = req.params.itemId;
+    const item = await getPublicItemById(itemId as string);
+    return res.status(200).json({
+      message: "Item retrieved successfully",
+      item,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
