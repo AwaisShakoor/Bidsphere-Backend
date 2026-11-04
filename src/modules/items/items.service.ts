@@ -3,6 +3,7 @@ import {
   uploadToCloudinary,
 } from "../../config/cloudinary";
 import { prisma } from "../../config/db";
+import { closeEndedAuctions } from "../auction/auction.services";
 import { CreateItemsDto } from "./create-items.dto";
 import { UpdateItemsDto } from "./update-items.dto";
 
@@ -154,9 +155,16 @@ export async function deletItem(itemId: string) {
 }
 
 export async function getPublicItems() {
+  await closeEndedAuctions();
+  const now = new Date();
+
   return prisma.item.findMany({
     where: {
-      auction: { status: "ACTIVE" },
+      auction: {
+        status: "ACTIVE",
+        startTime: { lte: now },
+        endTime: { gt: now },
+      },
     },
     select: {
       id: true,
@@ -196,10 +204,17 @@ export async function getPublicItems() {
 }
 
 export async function getPublicItemById(itemId: string) {
+  await closeEndedAuctions();
+  const now = new Date();
+
   const item = await prisma.item.findFirst({
     where: {
       id: itemId,
-      auction: { status: "ACTIVE" },
+      auction: {
+        status: "ACTIVE",
+        startTime: { lte: now },
+        endTime: { gt: now },
+      },
     },
     select: {
       id: true,

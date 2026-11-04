@@ -28,7 +28,19 @@ export async function createAuction(
   });
 }
 
+export async function closeEndedAuctions() {
+  await prisma.auction.updateMany({
+    where: {
+      status: "ACTIVE",
+      endTime: { lte: new Date() },
+    },
+    data: { status: "ENDED" },
+  });
+}
+
 export async function getMyAuctions(sellerId: string) {
+  await closeEndedAuctions();
+
   return prisma.auction.findMany({
     where: { sellerId },
     orderBy: { createdAt: "desc" },
@@ -36,6 +48,8 @@ export async function getMyAuctions(sellerId: string) {
 }
 
 export async function getAuctionById(sellerId: string, auctionId: string) {
+  await closeEndedAuctions();
+
   const auction = await prisma.auction.findFirst({
     where: { id: auctionId, sellerId },
   });
