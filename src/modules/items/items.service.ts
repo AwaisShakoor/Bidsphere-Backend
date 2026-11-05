@@ -8,6 +8,8 @@ import { CreateItemsDto } from "./create-items.dto";
 import { ItemErrors } from "./items.errors";
 import { UpdateItemsDto } from "./update-items.dto";
 
+const num = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
+
 export async function createItem(
   auctionId: string,
   sellerId: string,
@@ -26,30 +28,18 @@ export async function createItem(
     throw new Error(ItemErrors.ONLY_DRAFT);
   }
 
-  const startingPrice = Number(item.startingPrice);
-  const reservePrice =
-    item.reservePrice === undefined || item.reservePrice === null
-      ? undefined
-      : Number(item.reservePrice);
-  const shippingCost =
-    item.shippingCost === undefined || item.shippingCost === null
-      ? undefined
-      : Number(item.shippingCost);
-
-  const images = [];
-
-  for (let index = 0; index < files.length; index++) {
-    const file = files[index];
-    const uploaded = await uploadToCloudinary(file);
-
-    images.push({
-      cloudinaryPublicId: uploaded.public_id,
-      url: uploaded.secure_url,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-      sortOrder: index,
-    });
-  }
+  const images = await Promise.all(
+    files.map(async (file, index) => {
+      const uploaded = await uploadToCloudinary(file);
+      return {
+        cloudinaryPublicId: uploaded.public_id,
+        url: uploaded.secure_url,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        sortOrder: index,
+      };
+    }),
+  );
 
   return prisma.item.create({
     data: {
@@ -59,17 +49,14 @@ export async function createItem(
       description: item.description,
       categoryId: item.categoryId,
       itemCondition: item.itemCondition,
-      startingPrice,
-      reservePrice,
+      startingPrice: Number(item.startingPrice),
+      reservePrice: num(item.reservePrice),
       shippingType: item.shippingType,
-      shippingCost,
-      images: {
-        create: images,
-      },
+      shippingCost: num(item.shippingCost),
+      shippingEstimatedDays: num(item.shippingEstimatedDays),
+      images: { create: images },
     },
-    include: {
-      images: true,
-    },
+    include: { images: true },
   });
 }
 
@@ -148,10 +135,11 @@ export async function updateItem(
       description: data.description,
       categoryId: data.categoryId,
       itemCondition: data.itemCondition,
-      startingPrice: data.startingPrice,
-      reservePrice: data.reservePrice,
+      startingPrice: num(data.startingPrice),
+      reservePrice: num(data.reservePrice),
       shippingType: data.shippingType,
-      shippingCost: data.shippingCost,
+      shippingCost: num(data.shippingCost),
+      shippingEstimatedDays: num(data.shippingEstimatedDays),
     },
     include: { images: true },
   });
