@@ -7,4 +7,5 @@ export type CreateItemsDto = {
     reservePrice?: number;
     shippingType: "FREE" | "FLAT_RATE";
     shippingCost?: number;
+    shippingEstimatedDays?: number;
 }

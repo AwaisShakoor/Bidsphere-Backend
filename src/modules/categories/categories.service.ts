@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { closeEndedAuctions } from "../auction/auction.services";
+import { syncAuctionStatuses } from "../auction/auction.services";
 
 export async function getCategories() {
   const categories = await prisma.category.findMany({
@@ -27,7 +27,7 @@ export async function getCategoryBySlug(slug: string) {
   if (!category) {
     throw new Error("Category not found");
   }
-  await closeEndedAuctions();
+  await syncAuctionStatuses();
   const now = new Date();
 
   return await prisma.item.findMany({

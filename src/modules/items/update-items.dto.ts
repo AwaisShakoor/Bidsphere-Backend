@@ -7,5 +7,6 @@ export type UpdateItemsDto = {
     reservePrice?: number;
     shippingType?: "FREE" | "FLAT_RATE";
     shippingCost?: number;
+    shippingEstimatedDays?: number;
     removeImageIds?: string[];
 }

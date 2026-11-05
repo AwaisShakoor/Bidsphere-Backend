@@ -28,6 +28,16 @@ export async function createAuction(
   });
 }
 
+export async function activateScheduledAuctions() {
+  await prisma.auction.updateMany({
+    where: {
+      status: "SCHEDULED",
+      startTime: { lte: new Date() },
+    },
+    data: { status: "ACTIVE" },
+  });
+}
+
 export async function closeEndedAuctions() {
   await prisma.auction.updateMany({
     where: {
@@ -38,8 +48,14 @@ export async function closeEndedAuctions() {
   });
 }
 
-export async function getMyAuctions(sellerId: string) {
+/** Flip SCHEDULED → ACTIVE when start time hits, then ACTIVE → ENDED when end time hits. */
+export async function syncAuctionStatuses() {
+  await activateScheduledAuctions();
   await closeEndedAuctions();
+}
+
+export async function getMyAuctions(sellerId: string) {
+  await syncAuctionStatuses();
 
   return prisma.auction.findMany({
     where: { sellerId },
@@ -48,7 +64,7 @@ export async function getMyAuctions(sellerId: string) {
 }
 
 export async function getAuctionById(sellerId: string, auctionId: string) {
-  await closeEndedAuctions();
+  await syncAuctionStatuses();
 
   const auction = await prisma.auction.findFirst({
     where: { id: auctionId, sellerId },
