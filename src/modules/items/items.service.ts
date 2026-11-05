@@ -5,6 +5,7 @@ import {
 import { prisma } from "../../config/db";
 import { syncAuctionStatuses } from "../auction/auction.services";
 import { CreateItemsDto } from "./create-items.dto";
+import { ItemErrors } from "./items.errors";
 import { UpdateItemsDto } from "./update-items.dto";
 
 export async function createItem(
@@ -18,12 +19,22 @@ export async function createItem(
   });
 
   if (!auction) {
-    throw new Error("Auction not found");
+    throw new Error(ItemErrors.AUCTION_NOT_FOUND);
   }
 
   if (auction.status !== "DRAFT" && auction.status !== "REJECTED") {
-    throw new Error("Items can only be added to a draft or rejected auction");
+    throw new Error(ItemErrors.ONLY_DRAFT);
   }
+
+  const startingPrice = Number(item.startingPrice);
+  const reservePrice =
+    item.reservePrice === undefined || item.reservePrice === null
+      ? undefined
+      : Number(item.reservePrice);
+  const shippingCost =
+    item.shippingCost === undefined || item.shippingCost === null
+      ? undefined
+      : Number(item.shippingCost);
 
   const images = [];
 
@@ -48,10 +59,10 @@ export async function createItem(
       description: item.description,
       categoryId: item.categoryId,
       itemCondition: item.itemCondition,
-      startingPrice: item.startingPrice,
-      reservePrice: item.reservePrice,
+      startingPrice,
+      reservePrice,
       shippingType: item.shippingType,
-      shippingCost: item.shippingCost,
+      shippingCost,
       images: {
         create: images,
       },
