@@ -39,6 +39,7 @@ enum ShippingType {
 enum AuctionStatus {
   DRAFT            @map("draft")
   PENDING_APPROVAL @map("pending_approval")
+  SCHEDULED        @map("scheduled")
   ACTIVE           @map("active")
   ENDED            @map("ended")
   COMPLETED        @map("completed")
