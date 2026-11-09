@@ -34,21 +34,21 @@ export async function activateScheduledAuctions() {
       status: "SCHEDULED",
       startTime: { lte: new Date() },
     },
-    data: { status: "ACTIVE" },
+    data: { status: "LIVE" },
   });
 }
 
 export async function closeEndedAuctions() {
   await prisma.auction.updateMany({
     where: {
-      status: "ACTIVE",
+      status: "LIVE",
       endTime: { lte: new Date() },
     },
     data: { status: "ENDED" },
   });
 }
 
-/** Flip SCHEDULED → ACTIVE when start time hits, then ACTIVE → ENDED when end time hits. */
+/** Flip SCHEDULED → LIVE when start time hits, then LIVE → ENDED when end time hits. */
 export async function syncAuctionStatuses() {
   await activateScheduledAuctions();
   await closeEndedAuctions();

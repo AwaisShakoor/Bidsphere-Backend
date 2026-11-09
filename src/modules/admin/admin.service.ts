@@ -119,7 +119,7 @@ export async function approveAuction(auctionId: string) {
   }
 
   const now = new Date();
-  const status = auction.startTime <= now ? "ACTIVE" : "SCHEDULED";
+  const status = auction.startTime <= now ? "LIVE" : "SCHEDULED";
 
   return prisma.auction.update({
     where: { id: auctionId },
@@ -176,7 +176,7 @@ export async function getOverviews() {
   ] = await Promise.all([
     prisma.auction.count({ where: { status: "PENDING_APPROVAL" } }),
     prisma.auction.count({ where: { status: "SCHEDULED" } }),
-    prisma.auction.count({ where: { status: "ACTIVE" } }),
+    prisma.auction.count({ where: { status: "LIVE" } }),
     prisma.auction.count({ where: { status: "REJECTED" } }),
     prisma.auction.count({ where: { status: "COMPLETED" } }),
     prisma.user.count({ where: { role: "SELLER" } }),

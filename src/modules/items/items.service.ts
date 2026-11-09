@@ -159,7 +159,7 @@ export async function getPublicItems() {
   return prisma.item.findMany({
     where: {
       auction: {
-        status: "ACTIVE",
+        status: "LIVE",
       },
     },
     select: {
@@ -206,7 +206,7 @@ export async function getPublicItemById(itemId: string) {
     where: {
       id: itemId,
       auction: {
-        status: "ACTIVE",
+        status: "LIVE",
       },
     },
     select: {

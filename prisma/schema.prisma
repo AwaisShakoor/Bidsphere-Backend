@@ -40,7 +40,7 @@ enum AuctionStatus {
   DRAFT            @map("draft")
   PENDING_APPROVAL @map("pending_approval")
   SCHEDULED        @map("scheduled")
-  ACTIVE           @map("active")
+  LIVE             @map("live")
   ENDED            @map("ended")
   COMPLETED        @map("completed")
   NO_SALE          @map("no_sale")

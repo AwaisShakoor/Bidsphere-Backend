@@ -34,7 +34,7 @@ export async function getCategoryBySlug(slug: string) {
     where: {
       categoryId: category?.id,
       auction: {
-        status: "ACTIVE",
+        status: "LIVE",
         startTime: { lte: now },
         endTime: { gt: now },
       },

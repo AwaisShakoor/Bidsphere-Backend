@@ -43,7 +43,7 @@ export async function createBid(
     if (now >= auction.endTime || auction.status === "ENDED") {
       throw new Error(BidErrors.AUCTION_ENDED);
     }
-    if (auction.status !== "ACTIVE") {
+    if (auction.status !== "LIVE") {
       throw new Error(BidErrors.AUCTION_NOT_LIVE);
     }
 
