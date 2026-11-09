@@ -53,6 +53,8 @@ enum AuctionStatus {
 enum BidStatus {
   ACTIVE @map("active")
   OUTBID @map("outbid")
+  WON    @map("won")
+  LOST   @map("lost")
 
   @@map("bid_status")
 }

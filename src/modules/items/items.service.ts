@@ -206,13 +206,14 @@ export async function getPublicItemById(itemId: string) {
     where: {
       id: itemId,
       auction: {
-        status: "LIVE",
+        status: { in: ["LIVE", "ENDED", "NO_SALE"] },
       },
     },
     select: {
       id: true,
       title: true,
       description: true,
+      winnerId: true,
       startingPrice: true,
       reservePrice: true,
       currentBid: true,

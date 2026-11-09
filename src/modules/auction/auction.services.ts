@@ -39,13 +39,75 @@ export async function activateScheduledAuctions() {
 }
 
 export async function closeEndedAuctions() {
-  await prisma.auction.updateMany({
+  const now = new Date();
+
+  const auctions = await prisma.auction.findMany({
     where: {
-      status: "LIVE",
-      endTime: { lte: new Date() },
+      endTime: { lte: now },
+      OR: [
+        { status: "LIVE" },
+        {
+          status: "ENDED",
+          items: { some: { bids: { some: { status: "ACTIVE" } } } },
+        },
+      ],
     },
-    data: { status: "ENDED" },
+    select: {
+      id: true,
+      items: {
+        select: {
+          id: true,
+          reservePrice: true,
+          bids: {
+            where: { status: "ACTIVE" },
+            select: { id: true, bidderId: true, amount: true },
+            take: 1,
+          },
+        },
+      },
+    },
   });
+
+  for (const auction of auctions) {
+    await prisma.$transaction(async (tx) => {
+      let soldAny = false;
+
+      for (const item of auction.items) {
+        const highBid = item.bids[0];
+        const amount = highBid ? Number(highBid.amount) : null;
+        const reserve =
+          item.reservePrice === null ? null : Number(item.reservePrice);
+        const meetsReserve =
+          amount !== null && (reserve === null || amount >= reserve);
+
+        if (highBid && meetsReserve) {
+          soldAny = true;
+          await tx.item.update({
+            where: { id: item.id },
+            data: { winnerId: highBid.bidderId },
+          });
+          await tx.bid.update({
+            where: { id: highBid.id },
+            data: { status: "WON" },
+          });
+          await tx.bid.updateMany({
+            where: { itemId: item.id, id: { not: highBid.id } },
+            data: { status: "LOST" },
+          });
+        } else {
+          await tx.bid.updateMany({
+            where: { itemId: item.id },
+            data: { status: "LOST" },
+          });
+        }
+      }
+
+      await tx.auction.update({
+        where: { id: auction.id },
+        data: { status: soldAny ? "ENDED" : "NO_SALE" },
+      });
+    });
+  }
 }
 
 /** Flip SCHEDULED → LIVE when start time hits, then LIVE → ENDED when end time hits. */

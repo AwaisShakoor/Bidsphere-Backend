@@ -133,6 +133,7 @@ export async function getMyBids(bidderId: string) {
       item: {
         select: {
           id: true,
+          winnerId: true,
           title: true,
           currentBid: true,
           startingPrice: true,
