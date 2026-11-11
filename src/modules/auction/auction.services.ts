@@ -170,6 +170,11 @@ export async function updateAuction(
     ? new Date(updateAuctionDto.endTime)
     : existing.endTime;
 
+  const now = new Date();
+  if (startTime <= now || endTime <= now) {
+    throw new Error(AuctionErrors.INVALID_TIMES);
+  }
+
   if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
     throw new Error(AuctionErrors.INVALID_TIMES);
   }
