@@ -118,9 +118,12 @@ export async function approveAuction(auctionId: string) {
     throw new Error("Auction is not pending approval");
   }
 
+  const now = new Date();
+  const status = auction.startTime <= now ? "LIVE" : "SCHEDULED";
+
   return prisma.auction.update({
     where: { id: auctionId },
-    data: { status: "ACTIVE" },
+    data: { status },
     select: {
       id: true,
       status: true,
@@ -164,6 +167,7 @@ export async function rejectAuction(
 export async function getOverviews() {
   const [
     pendingApproval,
+    scheduledAuctions,
     activeAuctions,
     rejectedAuctions,
     completedAuctions,
@@ -171,7 +175,8 @@ export async function getOverviews() {
     buyers,
   ] = await Promise.all([
     prisma.auction.count({ where: { status: "PENDING_APPROVAL" } }),
-    prisma.auction.count({ where: { status: "ACTIVE" } }),
+    prisma.auction.count({ where: { status: "SCHEDULED" } }),
+    prisma.auction.count({ where: { status: "LIVE" } }),
     prisma.auction.count({ where: { status: "REJECTED" } }),
     prisma.auction.count({ where: { status: "COMPLETED" } }),
     prisma.user.count({ where: { role: "SELLER" } }),
@@ -181,6 +186,7 @@ export async function getOverviews() {
   return {
     auctions: {
       pendingApproval,
+      scheduledAuctions,
       activeAuctions,
       rejectedAuctions,
       completedAuctions,

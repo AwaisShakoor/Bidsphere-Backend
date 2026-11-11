@@ -10,6 +10,7 @@ import auctionRouter from "./src/modules/auction/auction.router";
 import categoriesRouter from "./src/modules/categories/categories.router";
 import itemsRouter from "./src/modules/items/items.router";
 import adminRouter from "./src/modules/admin/admin.route";
+import bidRouter from "./src/modules/bid/bid.router";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -39,6 +40,7 @@ app.use("/api", auctionRouter);
 app.use("/api", categoriesRouter);
 app.use("/api", itemsRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api", bidRouter);
 
 app.get("/", (_request, response) => {
   response.json({ message: "Bidsphere API is running" });

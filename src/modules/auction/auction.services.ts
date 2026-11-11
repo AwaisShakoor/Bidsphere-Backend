@@ -28,18 +28,96 @@ export async function createAuction(
   });
 }
 
-export async function closeEndedAuctions() {
+export async function activateScheduledAuctions() {
   await prisma.auction.updateMany({
     where: {
-      status: "ACTIVE",
-      endTime: { lte: new Date() },
+      status: "SCHEDULED",
+      startTime: { lte: new Date() },
     },
-    data: { status: "ENDED" },
+    data: { status: "LIVE" },
   });
 }
 
-export async function getMyAuctions(sellerId: string) {
+export async function closeEndedAuctions() {
+  const now = new Date();
+
+  const auctions = await prisma.auction.findMany({
+    where: {
+      endTime: { lte: now },
+      OR: [
+        { status: "LIVE" },
+        {
+          status: "ENDED",
+          items: { some: { bids: { some: { status: "ACTIVE" } } } },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      items: {
+        select: {
+          id: true,
+          reservePrice: true,
+          bids: {
+            where: { status: "ACTIVE" },
+            select: { id: true, bidderId: true, amount: true },
+            take: 1,
+          },
+        },
+      },
+    },
+  });
+
+  for (const auction of auctions) {
+    await prisma.$transaction(async (tx) => {
+      let soldAny = false;
+
+      for (const item of auction.items) {
+        const highBid = item.bids[0];
+        const amount = highBid ? Number(highBid.amount) : null;
+        const reserve =
+          item.reservePrice === null ? null : Number(item.reservePrice);
+        const meetsReserve =
+          amount !== null && (reserve === null || amount >= reserve);
+
+        if (highBid && meetsReserve) {
+          soldAny = true;
+          await tx.item.update({
+            where: { id: item.id },
+            data: { winnerId: highBid.bidderId },
+          });
+          await tx.bid.update({
+            where: { id: highBid.id },
+            data: { status: "WON" },
+          });
+          await tx.bid.updateMany({
+            where: { itemId: item.id, id: { not: highBid.id } },
+            data: { status: "LOST" },
+          });
+        } else {
+          await tx.bid.updateMany({
+            where: { itemId: item.id },
+            data: { status: "LOST" },
+          });
+        }
+      }
+
+      await tx.auction.update({
+        where: { id: auction.id },
+        data: { status: soldAny ? "ENDED" : "NO_SALE" },
+      });
+    });
+  }
+}
+
+/** Flip SCHEDULED → LIVE when start time hits, then LIVE → ENDED when end time hits. */
+export async function syncAuctionStatuses() {
+  await activateScheduledAuctions();
   await closeEndedAuctions();
+}
+
+export async function getMyAuctions(sellerId: string) {
+  await syncAuctionStatuses();
 
   return prisma.auction.findMany({
     where: { sellerId },
@@ -48,7 +126,7 @@ export async function getMyAuctions(sellerId: string) {
 }
 
 export async function getAuctionById(sellerId: string, auctionId: string) {
-  await closeEndedAuctions();
+  await syncAuctionStatuses();
 
   const auction = await prisma.auction.findFirst({
     where: { id: auctionId, sellerId },
