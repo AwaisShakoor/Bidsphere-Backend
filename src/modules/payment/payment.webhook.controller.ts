@@ -30,6 +30,24 @@ export async function stripeWebhookController(req: Request, res: Response) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
       await handleCheckoutCompleted(session);
+      const itemId = session.metadata?.itemId;
+      const paymentIntentId =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id;
+
+      if (itemId) {
+        await prisma.payment.updateMany({
+          where: { itemId, status: "PENDING" },
+          data: {
+            status: "COMPLETED",
+            paidAt: new Date(),
+            ...(paymentIntentId
+              ? { stripePaymentIntentId: paymentIntentId }
+              : {}),
+          },
+        });
+      }
       break;
     }
 
