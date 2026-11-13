@@ -11,6 +11,7 @@ import categoriesRouter from "./src/modules/categories/categories.router";
 import itemsRouter from "./src/modules/items/items.router";
 import adminRouter from "./src/modules/admin/admin.route";
 import bidRouter from "./src/modules/bid/bid.router";
+import { requestLogger } from "./src/middleware/request-logger.middleware";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -23,6 +24,7 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use(requestLogger);
 
 app.use(
   "/api-docs",
