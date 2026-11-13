@@ -57,6 +57,7 @@ export async function closeEndedAuctions() {
       items: {
         select: {
           id: true,
+          sellerId: true,
           reservePrice: true,
           bids: {
             where: { status: "ACTIVE", hiddenFromItem: false },
@@ -93,6 +94,29 @@ export async function closeEndedAuctions() {
           await tx.bid.updateMany({
             where: { itemId: item.id, id: { not: highBid.id } },
             data: { status: "LOST" },
+          });
+
+          const feePercent = Number(process.env.PLATFORM_FEE_PERCENT) || 5;
+          const platformFee = Number(
+            (((amount as number) * feePercent) / 100).toFixed(2),
+          );
+          const sellerPayout = Number(
+            ((amount as number) - platformFee).toFixed(2),
+          );
+
+          await tx.payment.create({
+            data: {
+              auctionId: auction.id,
+              itemId: item.id,
+              buyerId: highBid.bidderId,
+              sellerId: item.sellerId,
+              amount: amount as number,
+              platformFee,
+              sellerPayout,
+              stripePaymentIntentId: `pending_${item.id}`,
+              status: "PENDING",
+              paymentDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
+            },
           });
         } else {
           await tx.bid.updateMany({

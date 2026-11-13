@@ -7,6 +7,7 @@ export const PaymentErrors = {
   PAYMENT_ALREADY_COMPLETED: "Payment already completed",
   PAYMENT_NOT_FOUND: "Payment not found",
   FORBIDDEN: "You are not allowed to view this payment",
+  PAYMENT_EXPIRED: "Payment deadline has passed",
 } as const;
 
 export function handlePaymentError(error: unknown, res: Response) {
@@ -29,7 +30,8 @@ export function handlePaymentError(error: unknown, res: Response) {
 
   if (
     message === PaymentErrors.NO_WINNING_BID ||
-    message === PaymentErrors.PAYMENT_ALREADY_COMPLETED
+    message === PaymentErrors.PAYMENT_ALREADY_COMPLETED ||
+    message === PaymentErrors.PAYMENT_EXPIRED
   ) {
     return res.status(400).json({ message });
   }

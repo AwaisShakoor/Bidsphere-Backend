@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { stripe } from "../../config/stripe";
 import Stripe from "stripe";
 import { prisma } from "../../config/db";
+import { handleCheckoutCompleted } from "./payment.service";
 
 export async function stripeWebhookController(req: Request, res: Response) {
   const signature = req.headers["stripe-signature"];
@@ -28,24 +29,7 @@ export async function stripeWebhookController(req: Request, res: Response) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      const itemId = session.metadata?.itemId;
-      const paymentIntentId =
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id;
-
-      if (itemId) {
-        await prisma.payment.updateMany({
-          where: { itemId, status: "PENDING" },
-          data: {
-            status: "COMPLETED",
-            paidAt: new Date(),
-            ...(paymentIntentId
-              ? { stripePaymentIntentId: paymentIntentId }
-              : {}),
-          },
-        });
-      }
+      await handleCheckoutCompleted(session);
       break;
     }
 

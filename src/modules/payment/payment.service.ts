@@ -13,6 +13,14 @@ function toCents(amount: number) {
   return Math.round(amount * 100);
 }
 
+//create job to check for expired payments and cancel them
+export async function expireOverduePayments() {
+  await prisma.payment.updateMany({
+    where: { status: "PENDING", paymentDeadline: { lt: new Date() } },
+    data: { status: "FAILED" },
+  });
+}
+
 async function createCheckoutSession(params: {
   itemId: string;
   title: string;
@@ -82,6 +90,18 @@ export async function createCheckout(itemId: string, buyerId: string) {
     throw new Error(PaymentErrors.PAYMENT_ALREADY_COMPLETED);
   }
 
+  if (existing?.status === "FAILED") {
+    throw new Error(PaymentErrors.PAYMENT_EXPIRED);
+  }
+
+  if (existing?.status === "PENDING" && existing.paymentDeadline < new Date()) {
+    await prisma.payment.update({
+      where: { itemId },
+      data: { status: "FAILED" },
+    });
+    throw new Error(PaymentErrors.PAYMENT_EXPIRED);
+  }
+
   const amount = Number(winningBid.amount);
   const session = await createCheckoutSession({
     itemId,
@@ -139,8 +159,6 @@ export async function createCheckout(itemId: string, buyerId: string) {
   }
 }
 
-  
-
 export async function getItemPayment(itemId: string, userId: string) {
   const payment = await prisma.payment.findUnique({
     where: { itemId },
@@ -169,4 +187,44 @@ export async function getMyPayments(buyerId: string) {
       auction: { select: { id: true, title: true } },
     },
   });
+}
+
+export async function handleCheckoutCompleted(session: {
+  metadata?: Record<string, string> | null;
+  payment_intent?: string | { id: string } | null;
+}) {
+  const itemId = session.metadata?.itemId;
+  if (!itemId) return;
+
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id;
+
+  await prisma.payment.updateMany({
+    where: { itemId, status: "PENDING" },
+    data: {
+      status: "COMPLETED",
+      paidAt: new Date(),
+      ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}),
+    },
+  });
+
+  const payment = await prisma.payment.findUnique({
+    where: { itemId },
+    select: { auctionId: true, status: true },
+  });
+
+  if (!payment || payment.status !== "COMPLETED") return;
+
+  const pendingLeft = await prisma.payment.count({
+    where: { auctionId: payment.auctionId, status: "PENDING" },
+  });
+
+  if (pendingLeft === 0) {
+    await prisma.auction.update({
+      where: { id: payment.auctionId },
+      data: { status: "COMPLETED" },
+    });
+  }
 }

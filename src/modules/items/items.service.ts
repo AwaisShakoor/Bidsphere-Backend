@@ -80,6 +80,14 @@ export async function getItem(itemId: string) {
     },
     include: {
       images: true,
+      payment: {
+        select: {
+          id: true,
+          status: true,
+          paidAt: true,
+          paymentDeadline: true,
+        },
+      },
     },
   });
 }
@@ -210,7 +218,7 @@ export async function getPublicItemById(itemId: string) {
     where: {
       id: itemId,
       auction: {
-        status: { in: ["LIVE", "ENDED", "NO_SALE"] },
+        status: { in: ["LIVE", "ENDED", "NO_SALE", "COMPLETED"] },
       },
     },
     select: {
@@ -245,6 +253,14 @@ export async function getPublicItemById(itemId: string) {
           status: true,
           startTime: true,
           endTime: true,
+        },
+      },
+      payment: {
+        select: {
+          id: true,
+          status: true,
+          paidAt: true,
+          paymentDeadline: true,
         },
       },
       seller: {

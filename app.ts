@@ -15,6 +15,7 @@ import bidRouter from "./src/modules/bid/bid.router";
 import { requestLogger } from "./src/middleware/request-logger.middleware";
 import paymentWebhookRouter from "./src/modules/payment/payment.webhook.router";
 import paymentRouter from "./src/modules/payment/payment.router";
+import { expireOverduePayments } from "./src/modules/payment/payment.service";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -72,6 +73,15 @@ app.listen(port, () => {
     });
   };
 
+  const runpaymentExpiry = async () => {
+    void expireOverduePayments().catch((err) => {
+      console.log("payment expiry failed", err);
+    });
+  };
+
   runAuctionSync();
   setInterval(runAuctionSync, 30_000); // Run every 30 seconds
+
+  runpaymentExpiry();
+  setInterval(runpaymentExpiry, 300_000); // Run every 5 minutes
 });
