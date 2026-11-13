@@ -1,10 +1,12 @@
-import { forgotPassword, getMe, loginUser, logoutUser, refreshToken, registerUser, resetPassword, verifyEmail } from "./auth.service";
+import { forgotPassword, getMe, loginUser, logoutUser, refreshToken, registerUser, resendVerificationOtp, resetPassword, verifyEmail, verifyPasswordResetOtp } from "./auth.service";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { loginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
 import { Request, Response } from "express";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { ResendVerificationDto } from "./dto/resend-verification.dto";
 import { VerifyEmailDto } from "./dto/verify-email.dto";
+import { VerifyResetOtpDto } from "./dto/verify-reset-otp.dto";
 
 function handleAuthError(error: unknown, res: Response) {
   const message = error instanceof Error ? error.message : "Internal server error";
@@ -14,6 +16,12 @@ function handleAuthError(error: unknown, res: Response) {
   }
   if (message === "Invalid email or password") {
     return res.status(401).json({ message: "Invalid email or password" });
+  }
+  if (message === "EMAIL_NOT_VERIFIED") {
+    return res.status(403).json({
+      message: "Email not verified. Please verify OTP to continue.",
+      code: "EMAIL_NOT_VERIFIED",
+    });
   }
   if (message === "Unauthorized") {
     return res.status(401).json({ message: "Unauthorized" });
@@ -85,6 +93,23 @@ export async function verifyEmailHandler(req: Request, res: Response) {
   }
 }
 
+export async function resendVerificationHandler(req: Request, res: Response) {
+  try {
+    const data = req.body as ResendVerificationDto;
+    const result = await resendVerificationOtp(data.email);
+    if (!result.success) {
+      const status = result.message === "User not found" ? 404 : 400;
+      return res.status(status).json({ message: result.message });
+    }
+    return res.status(200).json({
+      message: result.message,
+      code: result.code,
+    });
+  } catch (error) {
+    return handleAuthError(error, res);
+  }
+}
+
 export async function login(req: Request, res: Response) {
   try {
     const data = req.body as loginDto;
@@ -134,6 +159,22 @@ export async function forgotPasswordHandler(req: Request, res: Response) {
       });
     }
     return res.status(200).json({ message: result.message });
+  } catch (error) {
+    return handleAuthError(error, res);
+  }
+}
+
+export async function verifyResetOtpHandler(req: Request, res: Response) {
+  try {
+    const data = req.body as VerifyResetOtpDto;
+    const result = await verifyPasswordResetOtp(data);
+    if (!result.success) {
+      return res.status(400).json({ message: result.message });
+    }
+    return res.status(200).json({
+      message: result.message,
+      resetToken: result.resetToken,
+    });
   } catch (error) {
     return handleAuthError(error, res);
   }
