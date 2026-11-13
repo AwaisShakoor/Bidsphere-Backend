@@ -3,6 +3,9 @@ node_modules
 # Build output
 dist/
 
+# Request debug history
+logs/
+
 # Prisma generated client
 generated/
 

@@ -17,6 +17,7 @@ export async function getUsersController(req: Request, res: Response) {
       data: users,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -30,6 +31,7 @@ export async function getAllAuctionsController(req: Request, res: Response) {
       data: auctions,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -49,6 +51,7 @@ export async function getAuctionByIdController(req: Request, res: Response) {
     if (message === "Auction not found") {
       return res.status(404).json({ message });
     }
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -71,6 +74,7 @@ export async function approveAuctionController(req: Request, res: Response) {
     if (message === "Auction is not pending approval") {
       return res.status(400).json({ message });
     }
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -97,6 +101,7 @@ export async function rejectAuctionController(req: Request, res: Response) {
     if (message === "Rejection reason is required") {
       return res.status(400).json({ message });
     }
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -115,6 +120,7 @@ export async function getOverviewsController(req: Request, res: Response) {
     if (message === "Overviews not found") {
       return res.status(404).json({ message });
     }
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }

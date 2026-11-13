@@ -9,6 +9,7 @@ export async function getCategoriesController(req: Request, res: Response) {
       data: categories,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -22,6 +23,7 @@ export async function getCategoryBySlugController(req: Request, res: Response) {
       data: category,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
