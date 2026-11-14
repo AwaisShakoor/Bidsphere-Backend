@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  EXPIRED_TIMES_REASON,
   approveAuction,
   getAllAuctions,
   getAuctionById,
@@ -72,6 +73,10 @@ export async function approveAuctionController(req: Request, res: Response) {
       return res.status(404).json({ message });
     }
     if (message === "Auction is not pending approval") {
+      return res.status(400).json({ message });
+    }
+
+    if (message === EXPIRED_TIMES_REASON) {
       return res.status(400).json({ message });
     }
     console.error(error);

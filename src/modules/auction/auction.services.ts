@@ -3,6 +3,23 @@ import { AuctionErrors } from "./auction.errors";
 import { CreateAuctionDto } from "./create-auction.dto";
 import { UpdateAuctionDto } from "./update-auction.dto";
 
+function assertFutureAuctionTimes(startTime: Date, endTime: Date) {
+  if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
+    throw new Error(AuctionErrors.INVALID_TIMES);
+  }
+  if (endTime <= startTime) {
+    throw new Error(AuctionErrors.END_BEFORE_START);
+  }
+
+  const now = new Date();
+  if (startTime <= now) {
+    throw new Error(AuctionErrors.START_MUST_BE_FUTURE);
+  }
+  if (endTime <= now) {
+    throw new Error(AuctionErrors.END_MUST_BE_FUTURE);
+  }
+}
+
 export async function createAuction(
   sellerId: string,
   createAuctionDto: CreateAuctionDto,
@@ -10,12 +27,7 @@ export async function createAuction(
   const startTime = new Date(createAuctionDto.startTime);
   const endTime = new Date(createAuctionDto.endTime);
 
-  if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
-    throw new Error(AuctionErrors.INVALID_TIMES);
-  }
-  if (endTime <= startTime) {
-    throw new Error(AuctionErrors.END_BEFORE_START);
-  }
+  assertFutureAuctionTimes(startTime, endTime);
 
   return prisma.auction.create({
     data: {
@@ -194,17 +206,7 @@ export async function updateAuction(
     ? new Date(updateAuctionDto.endTime)
     : existing.endTime;
 
-  const now = new Date();
-  if (startTime <= now || endTime <= now) {
-    throw new Error(AuctionErrors.INVALID_TIMES);
-  }
-
-  if (Number.isNaN(startTime.getTime()) || Number.isNaN(endTime.getTime())) {
-    throw new Error(AuctionErrors.INVALID_TIMES);
-  }
-  if (endTime <= startTime) {
-    throw new Error(AuctionErrors.END_BEFORE_START);
-  }
+  assertFutureAuctionTimes(startTime, endTime);
 
   return prisma.auction.update({
     where: { id: auctionId },
@@ -247,6 +249,13 @@ export async function submitAuction(sellerId: string, auctionId: string) {
   ) {
     throw new Error(AuctionErrors.ONLY_DRAFT_SUBMIT);
   }
+
+  if (existing.items.length === 0) {
+    throw new Error(AuctionErrors.NO_ITEMS);
+  }
+
+  // Resubmit / submit: times must still be in the future.
+  assertFutureAuctionTimes(existing.startTime, existing.endTime);
 
   const itemIds = existing.items.map((item) => item.id);
 

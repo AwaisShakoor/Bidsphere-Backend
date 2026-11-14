@@ -62,6 +62,12 @@ app.get("/health", (_request, response) => {
   response.json({ status: "ok" });
 });
 
+app.use((req, res) => {
+  res.status(404).json({
+    message: `Cannot ${req.method} ${req.originalUrl}`,
+  });
+});
+
 connectRedis().then(() => console.log("Redis connected"));
 
 app.listen(port, () => {
