@@ -59,7 +59,7 @@ export async function closeEndedAuctions() {
           id: true,
           reservePrice: true,
           bids: {
-            where: { status: "ACTIVE" },
+            where: { status: "ACTIVE", hiddenFromItem: false },
             select: { id: true, bidderId: true, amount: true },
             take: 1,
           },
@@ -152,7 +152,11 @@ export async function updateAuction(
     throw new Error(AuctionErrors.NOT_FOUND);
   }
 
-  if (existing.status !== "DRAFT" && existing.status !== "REJECTED") {
+  if (
+    existing.status !== "DRAFT" &&
+    existing.status !== "REJECTED" &&
+    existing.status !== "NO_SALE"
+  ) {
     throw new Error(AuctionErrors.ONLY_DRAFT_UPDATE);
   }
 
@@ -207,12 +211,33 @@ export async function submitAuction(sellerId: string, auctionId: string) {
     throw new Error(AuctionErrors.NOT_FOUND);
   }
 
-  if (existing.status !== "DRAFT" && existing.status !== "REJECTED") {
+  if (
+    existing.status !== "DRAFT" &&
+    existing.status !== "REJECTED" &&
+    existing.status !== "NO_SALE"
+  ) {
     throw new Error(AuctionErrors.ONLY_DRAFT_SUBMIT);
   }
 
-  return prisma.auction.update({
-    where: { id: auctionId },
-    data: { status: "PENDING_APPROVAL", rejectionReason: null },
+  const itemIds = existing.items.map((item) => item.id);
+
+  return prisma.$transaction(async (tx) => {
+    // NO_SALE resubmit: keep bids for My Bids, hide them from item history.
+    if (existing.status === "NO_SALE" && itemIds.length > 0) {
+      await tx.bid.updateMany({
+        where: { itemId: { in: itemIds }, hiddenFromItem: false },
+        data: { hiddenFromItem: true, status: "LOST" },
+      });
+
+      await tx.item.updateMany({
+        where: { id: { in: itemIds } },
+        data: { currentBid: null, winnerId: null },
+      });
+    }
+
+    return tx.auction.update({
+      where: { id: auctionId },
+      data: { status: "PENDING_APPROVAL", rejectionReason: null },
+    });
   });
 }

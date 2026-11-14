@@ -24,7 +24,11 @@ export async function createItem(
     throw new Error(ItemErrors.AUCTION_NOT_FOUND);
   }
 
-  if (auction.status !== "DRAFT" && auction.status !== "REJECTED") {
+  if (
+    auction.status !== "DRAFT" &&
+    auction.status !== "REJECTED" &&
+    auction.status !== "NO_SALE"
+  ) {
     throw new Error(ItemErrors.ONLY_DRAFT);
   }
 

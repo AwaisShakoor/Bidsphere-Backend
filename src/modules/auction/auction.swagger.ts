@@ -142,7 +142,10 @@ export const auctionPaths = {
   "/api/auctions/{id}/submit": {
     post: {
       tags: ["Auctions"],
-      summary: "Submit a draft auction for approval (seller)",
+      summary:
+        "Submit a draft, rejected, or no-sale auction for approval (seller)",
+      description:
+        "For NO_SALE resubmit: previous bids stay in My Bids but are hidden from the item bid history, and item currentBid/winner are reset.",
       parameters: [
         {
           in: "path",
@@ -154,7 +157,8 @@ export const auctionPaths = {
       responses: {
         200: { description: "Auction submitted for approval" },
         400: {
-          description: "Only a draft can be submitted / auction has no items",
+          description:
+            "Only draft, rejected, or no-sale auctions can be submitted",
         },
         401: { description: "Unauthorized" },
         404: { description: "Auction not found" },
