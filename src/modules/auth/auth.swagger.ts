@@ -21,8 +21,11 @@ export const authPaths = {
         },
       },
       responses: {
-        201: { description: "User created (inactive). OTP sent successfully." },
-        400: { description: "User already exists" },
+        201: {
+          description:
+            "User created or existing inactive user updated. OTP sent successfully.",
+        },
+        400: { description: "User already exists (active account)" },
         500: { description: "Internal server error" },
       },
     },
@@ -55,6 +58,33 @@ export const authPaths = {
     },
   },
 
+  "/api/resend-otp": {
+    post: {
+      tags: ["Auth"],
+      summary: "Resend email verification OTP for an inactive account",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["email"],
+              properties: {
+                email: { type: "string", example: "newtestuser@gmail.com" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: "OTP sent successfully." },
+        400: { description: "Email already verified" },
+        404: { description: "User not found" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+
   "/api/login": {
     post: {
       tags: ["Auth"],
@@ -77,6 +107,10 @@ export const authPaths = {
       responses: {
         200: { description: "User login successfully (sets accessToken cookie)" },
         401: { description: "Invalid email or password" },
+        403: {
+          description:
+            "Email not verified (code: EMAIL_NOT_VERIFIED). Show OTP screen.",
+        },
         500: { description: "Internal server error" },
       },
     },
@@ -151,20 +185,46 @@ export const authPaths = {
     },
   },
 
-  "/api/reset-password": {
+  "/api/verify-reset-otp": {
     post: {
       tags: ["Auth"],
-      summary: "Reset password with OTP",
+      summary: "Verify password-reset OTP and get a short-lived resetToken",
       requestBody: {
         required: true,
         content: {
           "application/json": {
             schema: {
               type: "object",
-              required: ["email", "otp", "newPassword"],
+              required: ["email", "otp"],
               properties: {
                 email: { type: "string", example: "newtestuser@gmail.com" },
                 otp: { type: "string", example: "123456" },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: "OTP verified. Returns resetToken (valid 10 minutes)." },
+        400: { description: "Invalid or expired OTP" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+
+  "/api/reset-password": {
+    post: {
+      tags: ["Auth"],
+      summary: "Set a new password using resetToken from verify-reset-otp",
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["resetToken", "newPassword"],
+              properties: {
+                resetToken: { type: "string", example: "a1b2c3..." },
                 newPassword: { type: "string", example: "NewPass123@" },
               },
             },
@@ -173,7 +233,7 @@ export const authPaths = {
       },
       responses: {
         200: { description: "Password reset successfully (sets auth cookie)" },
-        400: { description: "Invalid or expired OTP" },
+        400: { description: "Invalid or expired reset token" },
         500: { description: "Internal server error" },
       },
     },

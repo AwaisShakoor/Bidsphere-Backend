@@ -2,7 +2,8 @@ import { Response } from "express";
 
 export const ItemErrors = {
   AUCTION_NOT_FOUND: "Auction not found",
-  ONLY_DRAFT: "Items can only be added to a draft or rejected auction",
+  ONLY_DRAFT:
+    "Items can only be added to a draft, rejected, or no-sale auction",
   IMAGE_UPLOAD_FAILED: "Image upload failed",
   IMAGE_UPLOAD_TIMEOUT:
     "Image upload timed out. Check Cloudinary credentials and network, then try a smaller image",

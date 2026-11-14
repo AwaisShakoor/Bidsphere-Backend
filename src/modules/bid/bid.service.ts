@@ -60,7 +60,7 @@ export async function createBid(
     }
 
     const currentHighBid = await tx.bid.findFirst({
-      where: { itemId, status: "ACTIVE" },
+      where: { itemId, status: "ACTIVE", hiddenFromItem: false },
       select: { bidderId: true },
     });
 
@@ -69,7 +69,7 @@ export async function createBid(
     }
 
     await tx.bid.updateMany({
-      where: { itemId, status: "ACTIVE" },
+      where: { itemId, status: "ACTIVE", hiddenFromItem: false },
       data: { status: "OUTBID" },
     });
 
@@ -101,7 +101,7 @@ export async function getItemBids(itemId: string) {
     throw new Error(BidErrors.ITEM_NOT_FOUND);
   }
   return prisma.bid.findMany({
-    where: { itemId },
+    where: { itemId, hiddenFromItem: false },
     orderBy: { placedAt: "desc" },
     select: {
       id: true,
