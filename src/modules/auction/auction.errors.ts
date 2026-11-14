@@ -9,6 +9,10 @@ export const AuctionErrors = {
   ONLY_DRAFT_DELETE: "Only draft auctions can be deleted",
   ONLY_DRAFT_SUBMIT:
     "Only draft, rejected, or no-sale auctions can be submitted",
+  TIMES_MUST_BE_FUTURE: "Start and end times must be in the future",
+  START_MUST_BE_FUTURE: "Start time must be in the future",
+  END_MUST_BE_FUTURE: "End time must be in the future",
+  NO_ITEMS: "Add at least one item before submitting the auction",
 } as const;
 
 export function handleAuctionError(error: unknown, res: Response) {
@@ -24,7 +28,11 @@ export function handleAuctionError(error: unknown, res: Response) {
     message === AuctionErrors.END_BEFORE_START ||
     message === AuctionErrors.ONLY_DRAFT_UPDATE ||
     message === AuctionErrors.ONLY_DRAFT_DELETE ||
-    message === AuctionErrors.ONLY_DRAFT_SUBMIT
+    message === AuctionErrors.ONLY_DRAFT_SUBMIT ||
+    message === AuctionErrors.TIMES_MUST_BE_FUTURE ||
+    message === AuctionErrors.START_MUST_BE_FUTURE ||
+    message === AuctionErrors.END_MUST_BE_FUTURE ||
+    message === AuctionErrors.NO_ITEMS
   ) {
     return res.status(400).json({ message });
   }
