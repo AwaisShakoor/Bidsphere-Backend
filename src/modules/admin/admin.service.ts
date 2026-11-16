@@ -105,6 +105,9 @@ export async function getAuctionById(auctionId: string) {
   return auction;
 }
 
+export const EXPIRED_TIMES_REASON =
+  "Auction times expired while waiting for approval. Please set a new start and end time and resubmit the auction.";
+
 export async function approveAuction(auctionId: string) {
   const auction = await prisma.auction.findUnique({
     where: { id: auctionId },
@@ -119,6 +122,15 @@ export async function approveAuction(auctionId: string) {
   }
 
   const now = new Date();
+
+  if (auction.endTime <= now) {
+    await prisma.auction.update({
+      where: { id: auctionId },
+      data: { status: "REJECTED", rejectionReason: EXPIRED_TIMES_REASON },
+    });
+    throw new Error(EXPIRED_TIMES_REASON);
+  }
+
   const status = auction.startTime <= now ? "LIVE" : "SCHEDULED";
 
   return prisma.auction.update({
