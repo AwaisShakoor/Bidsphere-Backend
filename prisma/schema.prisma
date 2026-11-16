@@ -68,6 +68,8 @@ enum NotificationType {
   NO_SALE             @map("no_sale")
   PAYMENT_REMINDER    @map("payment_reminder")
   AUCTION_ENDING_SOON @map("auction_ending_soon")
+  AUCTION_APPROVED    @map("auction_approved")
+  AUCTION_REJECTED    @map("auction_rejected")
 
   @@map("notification_type")
 }
@@ -228,15 +230,16 @@ model Notification {
   id        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId    String           @map("user_id") @db.Uuid
   type      NotificationType
+  title     String           @db.VarChar(150)
+  message   String           @db.VarChar(255)
   auctionId String?          @map("auction_id") @db.Uuid
   itemId    String?          @map("item_id") @db.Uuid
-  message   String           @db.VarChar(255)
+  isRead    Boolean          @default(false) @map("is_read")
   createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz()
 
-  // Relations
   user    User     @relation(fields: [userId], references: [id])
   auction Auction? @relation(fields: [auctionId], references: [id])
-  item    Item?    @relation(fields:[itemId], references:[id])     
+  item    Item?    @relation(fields: [itemId], references: [id])
 
   @@index([userId, createdAt])
   @@map("notifications")

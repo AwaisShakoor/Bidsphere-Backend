@@ -69,12 +69,12 @@ export async function closeEndedAuctions() {
       items: {
         select: {
           id: true,
+          title: true,
           sellerId: true,
           reservePrice: true,
           bids: {
             where: { status: "ACTIVE", hiddenFromItem: false },
             select: { id: true, bidderId: true, amount: true },
-            take: 1,
           },
         },
       },
@@ -130,10 +130,66 @@ export async function closeEndedAuctions() {
               paymentDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
             },
           });
+
+          await tx.notification.create({
+            data: {
+              userId: highBid.bidderId,
+              type: "AUCTION_WON",
+              title: "You won!",
+              message: `You won "${item.title}". Please pay within 48 hours.`,
+              auctionId: auction.id,
+              itemId: item.id,
+              isRead: false,
+            },
+          });
+
+          const loserIds = [
+            ...new Set(
+              item.bids
+                .filter((b) => b.bidderId !== highBid.bidderId)
+                .map((b) => b.bidderId),
+            ),
+          ];
+          if (loserIds.length > 0) {
+            await tx.notification.createMany({
+              data: loserIds.map((userId) => ({
+                userId,
+                type: "AUCTION_LOST" as const,
+                title: "Auction ended",
+                message: `You didn't win "${item.title}".`,
+                auctionId: auction.id,
+                itemId: item.id,
+                isRead: false,
+              })),
+            });
+          }
+          await tx.notification.create({
+            data: {
+              userId: item.sellerId,
+              type: "AUCTION_SOLD",
+              title: "Item sold",
+              message: `"${item.title}" sold. Waiting for buyer payment.`,
+              auctionId: auction.id,
+              itemId: item.id,
+              isRead: false,
+            },
+          });
         } else {
           await tx.bid.updateMany({
             where: { itemId: item.id },
             data: { status: "LOST" },
+          });
+
+          await tx.notification.create({
+            data: {
+              userId: item.sellerId,
+              type: "NO_SALE",
+              title: "No sale",
+              message: `"${item.title}" ended with no valid sale.`,
+              auctionId: auction.id,
+              itemId: item.id,
+              isRead: false,
+            },
           });
         }
       }
@@ -146,9 +202,68 @@ export async function closeEndedAuctions() {
   }
 }
 
+const AUCTION_ENDING_SOON_MINUTES = 30;
+
+export async function notifyAuctionsEndingSoon() {
+  const now = new Date();
+  const within = new Date(
+    now.getTime() + AUCTION_ENDING_SOON_MINUTES * 60 * 1000,
+  );
+
+  const auctions = await prisma.auction.findMany({
+    where: {
+      status: "LIVE",
+      endTime: { gt: now, lte: within },
+    },
+    select: {
+      id: true,
+      title: true,
+      sellerId: true,
+      items: {
+        select: {
+          bids: { select: { bidderId: true } },
+        },
+      },
+    },
+  });
+
+  for (const auction of auctions) {
+    const userIds = [
+      ...new Set([
+        auction.sellerId,
+        ...auction.items.flatMap((item) =>
+          item.bids.map((bid) => bid.bidderId),
+        ),
+      ]),
+    ];
+    for (const userId of userIds) {
+      const alreadySent = await prisma.notification.findFirst({
+        where: {
+          userId,
+          auctionId: auction.id,
+          type: "AUCTION_ENDING_SOON",
+        },
+        select: { id: true },
+      });
+      if (alreadySent) continue;
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: "AUCTION_ENDING_SOON",
+          title: "Auction ending soon",
+          message: `"${auction.title}" ends in less than 30 minutes.`,
+          auctionId: auction.id,
+          isRead: false,
+        },
+      });
+    }
+  }
+}
+
 /** Flip SCHEDULED → LIVE when start time hits, then LIVE → ENDED when end time hits. */
 export async function syncAuctionStatuses() {
   await activateScheduledAuctions();
+  await notifyAuctionsEndingSoon();
   await closeEndedAuctions();
 }
 

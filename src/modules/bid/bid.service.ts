@@ -86,6 +86,33 @@ export async function createBid(
       where: { id: itemId },
       data: { currentBid: amount },
     });
+
+    if (currentHighBid) {
+      await tx.notification.create({
+        data: {
+          userId: currentHighBid.bidderId,
+          type: "OUTBID",
+          title: "You've been outbid",
+          message: `Someone bid higher than you on "${item.title}".`,
+          auctionId: item.auctionId,
+          itemId: item.id,
+          isRead: false,
+        },
+      });
+    }
+
+    await tx.notification.create({
+      data: {
+        userId: item.sellerId,
+        type: "NEW_BID",
+        title: "New bid",
+        message: `New bid of $${amount} on "${item.title}".`,
+        auctionId: item.auctionId,
+        itemId: item.id,
+        isRead: false,
+      },
+    });
+
     return bid;
   });
 }

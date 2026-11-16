@@ -133,15 +133,30 @@ export async function approveAuction(auctionId: string) {
 
   const status = auction.startTime <= now ? "LIVE" : "SCHEDULED";
 
-  return prisma.auction.update({
+  const updated = await prisma.auction.update({
     where: { id: auctionId },
     data: { status },
     select: {
       id: true,
       status: true,
       title: true,
+      sellerId: true,
     },
   });
+
+  await prisma.notification.create({
+    data: {
+      userId: updated.sellerId,
+      type: "AUCTION_APPROVED",
+      title: "Auction approved",
+      message: `Your auction "${updated.title}" has been approved.`,
+    },
+  });
+  return {
+    id: updated.id,
+    status: updated.status,
+    title: updated.title,
+  };
 }
 
 export async function rejectAuction(
@@ -164,7 +179,7 @@ export async function rejectAuction(
     throw new Error("Auction is not pending approval");
   }
 
-  return prisma.auction.update({
+  const updated = await prisma.auction.update({
     where: { id: auctionId },
     data: { status: "REJECTED", rejectionReason: rejectionReason },
     select: {
@@ -172,8 +187,24 @@ export async function rejectAuction(
       status: true,
       title: true,
       rejectionReason: true,
+      sellerId: true,
     },
   });
+
+  await prisma.notification.create({
+    data: {
+      userId: updated.sellerId,
+      type: "AUCTION_REJECTED",
+      title: "Auction rejected",
+      message: `Your auction "${updated.title}" has been rejected.`,
+    },
+  });
+  return {
+    id: updated.id,
+    status: updated.status,
+    title: updated.title,
+    rejectionReason: updated.rejectionReason,
+  };
 }
 
 export async function getOverviews() {

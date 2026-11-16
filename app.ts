@@ -15,7 +15,8 @@ import bidRouter from "./src/modules/bid/bid.router";
 import { requestLogger } from "./src/middleware/request-logger.middleware";
 import paymentWebhookRouter from "./src/modules/payment/payment.webhook.router";
 import paymentRouter from "./src/modules/payment/payment.router";
-import { expireOverduePayments } from "./src/modules/payment/payment.service";
+import { expireOverduePayments, sendPaymentReminders } from "./src/modules/payment/payment.service";
+import notificationRouter from "./src/modules/notification/notification.router";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -53,6 +54,7 @@ app.use("/api", itemsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api", bidRouter);
 app.use("/api", paymentRouter);
+app.use("/api", notificationRouter);
 
 app.get("/", (_request, response) => {
   response.json({ message: "Bidsphere API is running" });
@@ -82,6 +84,9 @@ app.listen(port, () => {
   const runpaymentExpiry = async () => {
     void expireOverduePayments().catch((err) => {
       console.log("payment expiry failed", err);
+    });
+    void sendPaymentReminders().catch((err) => {
+      console.log("payment reminder failed", err);
     });
   };
 

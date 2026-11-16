@@ -69,6 +69,13 @@ export async function getItems(auctionId: string) {
     where: { auctionId },
     include: {
       images: true,
+      winner: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 }
@@ -86,6 +93,13 @@ export async function getItem(itemId: string) {
           status: true,
           paidAt: true,
           paymentDeadline: true,
+        },
+      },
+      winner: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
         },
       },
     },
@@ -264,6 +278,13 @@ export async function getPublicItemById(itemId: string) {
         },
       },
       seller: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+      winner: {
         select: {
           id: true,
           firstName: true,

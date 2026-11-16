@@ -15,10 +15,95 @@ function toCents(amount: number) {
 
 //create job to check for expired payments and cancel them
 export async function expireOverduePayments() {
-  await prisma.payment.updateMany({
+  const overduw = await prisma.payment.findMany({
     where: { status: "PENDING", paymentDeadline: { lt: new Date() } },
-    data: { status: "FAILED" },
+    select: {
+      id: true,
+      buyerId: true,
+      sellerId: true,
+      auctionId: true,
+      itemId: true,
+      item: { select: { title: true } },
+    },
   });
+
+  for (const payment of overduw) {
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: "FAILED" },
+      });
+      await tx.notification.create({
+        data: {
+          userId: payment.buyerId,
+          type: "PAYMENT_REMINDER",
+          title: "Payment deadline passed",
+          message: `Your payment for "${payment.item.title}" has expired.`,
+          auctionId: payment.auctionId,
+          itemId: payment.itemId,
+          isRead: false,
+        },
+      });
+      await tx.notification.create({
+        data: {
+          userId: payment.sellerId,
+          type: "PAYMENT_REMINDER",
+          title: "Buyer did not pay",
+          message: `The buyer did not pay for "${payment.item.title}" within the deadline.`,
+          auctionId: payment.auctionId,
+          itemId: payment.itemId,
+          isRead: false,
+        },
+      });
+    });
+  }
+}
+
+const PAYMENT_REMINDER_HOURS_BEFORE_EXPIRY = 24;
+
+export async function sendPaymentReminders() {
+  const now = new Date();
+  const within = new Date(
+    now.getTime() + PAYMENT_REMINDER_HOURS_BEFORE_EXPIRY * 60 * 60 * 1000,
+  );
+
+  const dueSoon = await prisma.payment.findMany({
+    where: { status: "PENDING", paymentDeadline: { gt: now, lte: within } },
+    select: {
+      id: true,
+      buyerId: true,
+      sellerId: true,
+      auctionId: true,
+      itemId: true,
+      item: { select: { title: true } },
+    },
+  });
+
+  for (const payment of dueSoon) {
+    const alreadySent = await prisma.notification.findFirst({
+      where: {
+        userId: payment.buyerId,
+        itemId: payment.itemId,
+        type: "PAYMENT_REMINDER",
+      },
+      select: { id: true },
+    });
+    if (alreadySent) continue;
+
+    await prisma.$transaction(async (tx) => {
+      await tx.notification.create({
+        data: {
+          userId: payment.buyerId,
+          type: "PAYMENT_REMINDER",
+          title: "Payment Reminder",
+          message: `You have less than 24 hours left to pay for "${payment.item.title}".`,
+          auctionId: payment.auctionId,
+          itemId: payment.itemId,
+          isRead: false,
+        },
+      });
+    });
+  }
 }
 
 async function createCheckoutSession(params: {
@@ -212,7 +297,14 @@ export async function handleCheckoutCompleted(session: {
 
   const payment = await prisma.payment.findUnique({
     where: { itemId },
-    select: { auctionId: true, status: true },
+    select: {
+      auctionId: true,
+      itemId: true,
+      buyerId: true,
+      sellerId: true,
+      status: true,
+      item: { select: { title: true } },
+    },
   });
 
   if (!payment || payment.status !== "COMPLETED") return;
@@ -227,4 +319,28 @@ export async function handleCheckoutCompleted(session: {
       data: { status: "COMPLETED" },
     });
   }
+
+  const title = payment.item.title;
+
+  await prisma.notification.create({
+    data: {
+      userId: payment.buyerId,
+      type: "AUCTION_WON",
+      title: "Payment Successful",
+      message: `Your payment for "${title}" is complete.`,
+      auctionId: payment.auctionId,
+      itemId: payment.itemId,
+    },
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: payment.sellerId,
+      type: "AUCTION_SOLD",
+      title: "Payment received",
+      message: `Buyer completed payment for "${title}".`,
+      auctionId: payment.auctionId,
+      itemId: payment.itemId,
+    },
+  });
 }
