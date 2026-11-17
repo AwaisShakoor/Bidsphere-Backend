@@ -67,6 +67,7 @@ enum NotificationType {
   AUCTION_SOLD        @map("auction_sold")
   NO_SALE             @map("no_sale")
   PAYMENT_REMINDER    @map("payment_reminder")
+  PAYMENT_EXPIRED     @map("payment_expired")
   AUCTION_ENDING_SOON @map("auction_ending_soon")
   AUCTION_APPROVED    @map("auction_approved")
   AUCTION_REJECTED    @map("auction_rejected")
