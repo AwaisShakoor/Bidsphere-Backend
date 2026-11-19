@@ -3,7 +3,7 @@ import {
   uploadToCloudinary,
 } from "../../config/cloudinary";
 import { prisma } from "../../config/db";
-import { syncAuctionStatuses } from "../auction/auction.services";
+import { syncAuctionStatuses } from "../auction/auction.jobs.service";
 import { CreateItemsDto } from "./create-items.dto";
 import { ItemErrors } from "./items.errors";
 import { UpdateItemsDto } from "./update-items.dto";

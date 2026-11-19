@@ -1,4 +1,4 @@
-import { syncAuctionStatuses } from "../modules/auction/auction.services";
+import { syncAuctionStatuses } from "../modules/auction/auction.jobs.service";
 
 const AUCTION_SYNC_INTERVAL_MS = 30_000;
 

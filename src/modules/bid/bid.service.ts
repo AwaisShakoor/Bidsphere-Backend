@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { syncAuctionStatuses } from "../auction/auction.services";
+import { syncAuctionStatuses } from "../auction/auction.jobs.service";
 import { BidErrors } from "./bid.errors";
 import { CreateBidDto } from "./create-bid.dto";
 

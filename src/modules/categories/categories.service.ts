@@ -1,5 +1,5 @@
 import { prisma } from "../../config/db";
-import { syncAuctionStatuses } from "../auction/auction.services";
+import { syncAuctionStatuses } from "../auction/auction.jobs.service";
 
 export async function getCategories() {
   const categories = await prisma.category.findMany({

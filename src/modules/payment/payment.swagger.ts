@@ -53,4 +53,59 @@ export const paymentPaths = {
       },
     },
   },
+  "/api/me/stripe/connect": {
+    post: {
+      tags: ["Payments"],
+      summary: "Create Stripe Connect onboarding link for seller",
+      responses: {
+        200: { description: "Onboarding URL returned" },
+        401: { description: "Unauthorized" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/me/stripe/status": {
+    get: {
+      tags: ["Payments"],
+      summary: "Get my Stripe Connect status",
+      responses: {
+        200: { description: "Connect status retrieved" },
+        401: { description: "Unauthorized" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/me/payouts": {
+    get: {
+      tags: ["Payments"],
+      summary: "List my seller payouts",
+      responses: {
+        200: { description: "Payouts retrieved successfully" },
+        401: { description: "Unauthorized" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/me/stripe/balance": {
+    get: {
+      tags: ["Payments"],
+      summary: "Get my Stripe Connect available/pending balance",
+      responses: {
+        200: { description: "Balance retrieved" },
+        401: { description: "Unauthorized" },
+        400: { description: "Stripe not connected" },
+      },
+    },
+  },
+  "/api/me/stripe/withdraw": {
+    post: {
+      tags: ["Payments"],
+      summary: "Withdraw available Connect balance to bank (standard payout)",
+      responses: {
+        200: { description: "Payout created" },
+        400: { description: "Insufficient balance / not connected" },
+        401: { description: "Unauthorized" },
+      },
+    },
+  },
 };
