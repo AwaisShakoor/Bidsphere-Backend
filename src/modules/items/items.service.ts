@@ -3,7 +3,7 @@ import {
   uploadToCloudinary,
 } from "../../config/cloudinary";
 import { prisma } from "../../config/db";
-import { syncAuctionStatuses } from "../auction/auction.services";
+import { syncAuctionStatuses } from "../auction/auction.jobs.service";
 import { CreateItemsDto } from "./create-items.dto";
 import { ItemErrors } from "./items.errors";
 import { UpdateItemsDto } from "./update-items.dto";
@@ -69,6 +69,13 @@ export async function getItems(auctionId: string) {
     where: { auctionId },
     include: {
       images: true,
+      winner: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 }
@@ -86,6 +93,13 @@ export async function getItem(itemId: string) {
           status: true,
           paidAt: true,
           paymentDeadline: true,
+        },
+      },
+      winner: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
         },
       },
     },
@@ -264,6 +278,13 @@ export async function getPublicItemById(itemId: string) {
         },
       },
       seller: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+        },
+      },
+      winner: {
         select: {
           id: true,
           firstName: true,

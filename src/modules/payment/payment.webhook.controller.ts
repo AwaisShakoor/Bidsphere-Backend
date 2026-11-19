@@ -26,54 +26,41 @@ export async function stripeWebhookController(req: Request, res: Response) {
     return res.status(400).send(`Webhook Error: ${message}`);
   }
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      await handleCheckoutCompleted(session);
-      const itemId = session.metadata?.itemId;
-      const paymentIntentId =
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id;
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleCheckoutCompleted(session);
+        break;
+      }
 
-      if (itemId) {
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
         await prisma.payment.updateMany({
-          where: { itemId, status: "PENDING" },
+          where: { stripePaymentIntentId: paymentIntent.id },
           data: {
             status: "COMPLETED",
             paidAt: new Date(),
-            ...(paymentIntentId
-              ? { stripePaymentIntentId: paymentIntentId }
-              : {}),
           },
         });
+        break;
       }
-      break;
-    }
 
-    case "payment_intent.succeeded": {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      await prisma.payment.updateMany({
-        where: { stripePaymentIntentId: paymentIntent.id },
-        data: {
-          status: "COMPLETED",
-          paidAt: new Date(),
-        },
-      });
-      break;
-    }
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        await prisma.payment.updateMany({
+          where: { stripePaymentIntentId: paymentIntent.id },
+          data: { status: "FAILED" },
+        });
+        break;
+      }
 
-    case "payment_intent.payment_failed": {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      await prisma.payment.updateMany({
-        where: { stripePaymentIntentId: paymentIntent.id },
-        data: { status: "FAILED" },
-      });
-      break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
-
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
+  } catch (err) {
+    console.error("Webhook processing failed:", err);
+    return res.status(500).send("Webhook processing failed");
   }
 
   return res.status(200).json({ received: true });

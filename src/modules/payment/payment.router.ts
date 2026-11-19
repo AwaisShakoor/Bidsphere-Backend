@@ -2,8 +2,13 @@ import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import {
   createCheckoutController,
+  createConnectOnboardingLinkController,
+  createConnectWithdrawController,
+  getConnectBalanceController,
+  getConnectionStatusController,
   getItemPaymentController,
   getMyPaymentsController,
+  getMyPayoutsController,
 } from "./payment.controller";
 
 const paymentRouter = Router();
@@ -19,5 +24,27 @@ paymentRouter.get(
   getItemPaymentController,
 );
 paymentRouter.get("/me/payments", authMiddleware, getMyPaymentsController);
+
+paymentRouter.post(
+  "/me/stripe/connect",
+  authMiddleware,
+  createConnectOnboardingLinkController,
+);
+paymentRouter.get(
+  "/me/stripe/status",
+  authMiddleware,
+  getConnectionStatusController,
+);
+paymentRouter.get("/me/payouts", authMiddleware, getMyPayoutsController);
+paymentRouter.get(
+  "/me/stripe/balance",
+  authMiddleware,
+  getConnectBalanceController,
+);
+paymentRouter.post(
+  "/me/stripe/withdraw",
+  authMiddleware,
+  createConnectWithdrawController,
+);
 
 export default paymentRouter;

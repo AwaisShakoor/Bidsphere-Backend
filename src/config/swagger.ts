@@ -6,6 +6,7 @@ import { itemPaths } from "../modules/items/items.swagger";
 import { adminPaths } from "../modules/admin/admin.swagger";
 import { bidPaths } from "../modules/bid/bid.swagger";
 import { paymentPaths } from "../modules/payment/payment.swagger";
+import { notificationPaths } from "../modules/notification/notification.swagger";
 
 const options: swaggerJsdoc.Options = {
   definition: {
@@ -28,6 +29,7 @@ const options: swaggerJsdoc.Options = {
       ...adminPaths,
       ...bidPaths,
       ...paymentPaths,
+      ...notificationPaths,
     },
   },
   apis: [],

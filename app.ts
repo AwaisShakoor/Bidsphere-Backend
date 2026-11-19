@@ -6,7 +6,6 @@ import cookieParser from "cookie-parser";
 import swaggerSpec from "./src/config/swagger";
 import swaggerUi from "swagger-ui-express";
 import { connectRedis } from "./src/config/redis";
-import { syncAuctionStatuses } from "./src/modules/auction/auction.services";
 import auctionRouter from "./src/modules/auction/auction.router";
 import categoriesRouter from "./src/modules/categories/categories.router";
 import itemsRouter from "./src/modules/items/items.router";
@@ -15,7 +14,8 @@ import bidRouter from "./src/modules/bid/bid.router";
 import { requestLogger } from "./src/middleware/request-logger.middleware";
 import paymentWebhookRouter from "./src/modules/payment/payment.webhook.router";
 import paymentRouter from "./src/modules/payment/payment.router";
-import { expireOverduePayments } from "./src/modules/payment/payment.service";
+import notificationRouter from "./src/modules/notification/notification.router";
+import { startJobs } from "./src/jobs";
 
 const app = express();
 const port = Number(process.env.PORT ?? 3000);
@@ -53,6 +53,7 @@ app.use("/api", itemsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api", bidRouter);
 app.use("/api", paymentRouter);
+app.use("/api", notificationRouter);
 
 app.get("/", (_request, response) => {
   response.json({ message: "Bidsphere API is running" });
@@ -72,22 +73,5 @@ connectRedis().then(() => console.log("Redis connected"));
 
 app.listen(port, () => {
   console.log(`Bidsphere API listening on port ${port}`);
-
-  const runAuctionSync = async () => {
-    void syncAuctionStatuses().catch((err) => {
-      console.log("auction sync failed", err);
-    });
-  };
-
-  const runpaymentExpiry = async () => {
-    void expireOverduePayments().catch((err) => {
-      console.log("payment expiry failed", err);
-    });
-  };
-
-  runAuctionSync();
-  setInterval(runAuctionSync, 30_000); // Run every 30 seconds
-
-  runpaymentExpiry();
-  setInterval(runpaymentExpiry, 300_000); // Run every 5 minutes
+  startJobs();
 });
