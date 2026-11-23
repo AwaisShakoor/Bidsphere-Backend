@@ -38,7 +38,7 @@ async function createCheckoutSession(params: {
         },
       },
     ],
-    success_url: `${process.env.FRONTEND_URL}/payments/success?itemId=${params.itemId}`,
+    success_url: `${process.env.FRONTEND_URL}/payments/success?itemId=${params.itemId}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/payments/cancel?itemId=${params.itemId}`,
     metadata: {
       itemId: params.itemId,
@@ -302,4 +302,58 @@ export async function getMyPayouts(sellerId: string) {
       },
     },
   });
+}
+
+export async function confirmCheckout(
+  itemId: string,
+  buyerId: string,
+  sessionIdFromClient?: string,
+) {
+  const payment = await prisma.payment.findUnique({
+    where: { itemId },
+  });
+
+  if (!payment) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  if (payment.buyerId !== buyerId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+
+  if (payment.status === "COMPLETED") {
+    return payment;
+  }
+  if (payment.status === "FAILED") {
+    throw new Error(PaymentErrors.PAYMENT_EXPIRED);
+  }
+
+  const sessionId = sessionIdFromClient?.startsWith("cs_")
+    ? sessionIdFromClient
+    : payment.stripePaymentIntentId;
+  if (!sessionId?.startsWith("cs_")) {
+    throw new Error(PaymentErrors.INVALID_SESSION);
+  }
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (session.metadata?.itemId && session.metadata.itemId !== itemId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+
+  if (session.payment_status !== "paid") {
+    throw new Error(PaymentErrors.PAYMENT_NOT_PAID);
+  }
+
+  await handleCheckoutCompleted({
+    metadata: (session.metadata as Record<string, string> | null) ?? {
+      itemId,
+    },
+    payment_intent: session.payment_intent,
+  });
+
+  const updated = await prisma.payment.findUnique({ where: { itemId } });
+  if (!updated) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  return updated;
 }

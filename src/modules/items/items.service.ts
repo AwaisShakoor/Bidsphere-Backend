@@ -10,6 +10,8 @@ import { UpdateItemsDto } from "./update-items.dto";
 
 const num = (v: unknown) => (v === "" || v == null ? undefined : Number(v));
 
+const optionalNum = (v: unknown) => (v === "" || v == null ? null : Number(v));
+
 export async function createItem(
   auctionId: string,
   sellerId: string,
@@ -54,10 +56,10 @@ export async function createItem(
       categoryId: item.categoryId,
       itemCondition: item.itemCondition,
       startingPrice: Number(item.startingPrice),
-      reservePrice: num(item.reservePrice),
+      reservePrice: optionalNum(item.reservePrice),
       shippingType: item.shippingType,
-      shippingCost: num(item.shippingCost),
-      shippingEstimatedDays: num(item.shippingEstimatedDays),
+      shippingCost: optionalNum(item.shippingCost),
+      shippingEstimatedDays: optionalNum(item.shippingEstimatedDays),
       images: { create: images },
     },
     include: { images: true },
@@ -162,10 +164,10 @@ export async function updateItem(
       categoryId: data.categoryId,
       itemCondition: data.itemCondition,
       startingPrice: num(data.startingPrice),
-      reservePrice: num(data.reservePrice),
+      reservePrice: optionalNum(data.reservePrice),
       shippingType: data.shippingType,
-      shippingCost: num(data.shippingCost),
-      shippingEstimatedDays: num(data.shippingEstimatedDays),
+      shippingCost: optionalNum(data.shippingCost),
+      shippingEstimatedDays: optionalNum(data.shippingEstimatedDays),
     },
     include: { images: true },
   });

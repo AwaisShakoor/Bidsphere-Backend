@@ -14,6 +14,8 @@ export const PaymentErrors = {
   INSUFFICIENT_BALANCE: "Insufficient available balance",
   INVALID_WITHDRAW_AMOUNT: "Invalid withdraw amount",
   STRIPE_WITHDRAW_FAILED: "Stripe withdraw failed",
+  PAYMENT_NOT_PAID: "Payment is not completed on Stripe yet",
+  INVALID_SESSION: "Invalid or missing Stripe checkout session",
 } as const;
 
 export function handlePaymentError(error: unknown, res: Response) {
@@ -43,7 +45,9 @@ export function handlePaymentError(error: unknown, res: Response) {
     message === PaymentErrors.STRIPE_NOT_CONNECTED ||
     message === PaymentErrors.INSUFFICIENT_BALANCE ||
     message === PaymentErrors.INVALID_WITHDRAW_AMOUNT ||
-    message === PaymentErrors.STRIPE_WITHDRAW_FAILED
+    message === PaymentErrors.STRIPE_WITHDRAW_FAILED ||
+    message === PaymentErrors.PAYMENT_NOT_PAID ||
+    message === PaymentErrors.INVALID_SESSION
   ) {
     return res.status(400).json({ message });
   }

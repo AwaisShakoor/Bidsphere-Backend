@@ -108,4 +108,44 @@ export const paymentPaths = {
       },
     },
   },
+  "/api/payments/items/{itemId}/confirm": {
+    post: {
+      tags: ["Payments"],
+      summary: "Confirm checkout after success page (sync if webhook missed)",
+      parameters: [
+        {
+          in: "path",
+          name: "itemId",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                sessionId: {
+                  type: "string",
+                  description: "Checkout session id from success URL",
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: "Payment confirmed / already completed" },
+        400: {
+          description: "Not paid on Stripe yet / invalid session / expired",
+        },
+        401: { description: "Unauthorized" },
+        403: { description: "Not the buyer for this payment" },
+        404: { description: "Payment not found" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
 };

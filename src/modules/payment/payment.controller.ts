@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import {
+  confirmCheckout,
   createCheckout,
   getItemPayment,
   getMyPayments,
@@ -101,6 +102,19 @@ export async function createConnectWithdrawController(
       message: "Withdraw started. Funds usually arrive in 1–2 business days.",
       result,
     });
+  } catch (error) {
+    return handlePaymentError(error, res);
+  }
+}
+
+export async function confirmCheckoutController(req: Request, res: Response) {
+  try {
+    const buyerId = req.user!.userId;
+    const itemId = req.params.itemId as string;
+    const sessionId =
+      typeof req.body?.sessionId === "string" ? req.body.sessionId : undefined;
+    const payment = await confirmCheckout(itemId, buyerId, sessionId);
+    return res.status(200).json({ payment });
   } catch (error) {
     return handlePaymentError(error, res);
   }

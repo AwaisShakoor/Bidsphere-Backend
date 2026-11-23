@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middleware/auth.middleware";
 import {
+  confirmCheckoutController,
   createCheckoutController,
   createConnectOnboardingLinkController,
   createConnectWithdrawController,
@@ -45,6 +46,11 @@ paymentRouter.post(
   "/me/stripe/withdraw",
   authMiddleware,
   createConnectWithdrawController,
+);
+paymentRouter.post(
+  "/payments/items/:itemId/confirm",
+  authMiddleware,
+  confirmCheckoutController,
 );
 
 export default paymentRouter;
