@@ -19,7 +19,9 @@ export async function getUsers() {
 
 export async function getAllAuctions() {
   return prisma.auction.findMany({
-    where: { status: "PENDING_APPROVAL" },
+    where: {
+      status: { in: ["PENDING_APPROVAL", "LIVE", "REJECTED", "COMPLETED"] },
+    },
     select: {
       id: true,
       status: true,
