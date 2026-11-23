@@ -13,14 +13,6 @@ function toCents(amount: number) {
   return Math.round(amount * 100);
 }
 
-//create job to check for expired payments and cancel them
-export async function expireOverduePayments() {
-  await prisma.payment.updateMany({
-    where: { status: "PENDING", paymentDeadline: { lt: new Date() } },
-    data: { status: "FAILED" },
-  });
-}
-
 async function createCheckoutSession(params: {
   itemId: string;
   title: string;
@@ -46,7 +38,7 @@ async function createCheckoutSession(params: {
         },
       },
     ],
-    success_url: `${process.env.FRONTEND_URL}/payments/success?itemId=${params.itemId}`,
+    success_url: `${process.env.FRONTEND_URL}/payments/success?itemId=${params.itemId}&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${process.env.FRONTEND_URL}/payments/cancel?itemId=${params.itemId}`,
     metadata: {
       itemId: params.itemId,
@@ -212,7 +204,17 @@ export async function handleCheckoutCompleted(session: {
 
   const payment = await prisma.payment.findUnique({
     where: { itemId },
-    select: { auctionId: true, status: true },
+    select: {
+      auctionId: true,
+      itemId: true,
+      buyerId: true,
+      sellerId: true,
+      status: true,
+      sellerPayout: true,
+      stripeTransferId: true,
+      item: { select: { title: true } },
+      seller: { select: { stripeAccountId: true } },
+    },
   });
 
   if (!payment || payment.status !== "COMPLETED") return;
@@ -227,4 +229,131 @@ export async function handleCheckoutCompleted(session: {
       data: { status: "COMPLETED" },
     });
   }
+
+  const title = payment.item.title;
+
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: payment.buyerId,
+        type: "AUCTION_WON",
+        title: "Payment Successful",
+        message: `Your payment for "${title}" is complete.`,
+        auctionId: payment.auctionId,
+        itemId: payment.itemId,
+      },
+    });
+  } catch (err) {
+    console.error("Buyer notification failed:", err);
+  }
+
+  if (!payment.stripeTransferId && payment.seller.stripeAccountId) {
+    try {
+      const transfer = await stripe.transfers.create({
+        amount: toCents(Number(payment.sellerPayout)),
+        currency: "usd",
+        destination: payment.seller.stripeAccountId,
+      });
+
+      await prisma.payment.update({
+        where: { itemId },
+        data: { stripeTransferId: transfer.id },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId: payment.sellerId,
+          type: "AUCTION_SOLD",
+          title: "Payment received",
+          message: `Buyer completed payment for "${title}".`,
+          auctionId: payment.auctionId,
+          itemId: payment.itemId,
+        },
+      });
+    } catch (err) {
+      console.error("Stripe transfer failed:", err);
+    }
+  } else if (!payment.seller.stripeAccountId) {
+    console.error(
+      "Skip transfer: seller has no stripeAccountId",
+      payment.sellerId,
+    );
+  }
+}
+
+export async function getMyPayouts(sellerId: string) {
+  return await prisma.payment.findMany({
+    where: { sellerId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      amount: true,
+      platformFee: true,
+      sellerPayout: true,
+      currency: true,
+      status: true,
+      stripeTransferId: true,
+      paidAt: true,
+      createdAt: true,
+      item: { select: { id: true, title: true } },
+      auction: { select: { id: true, title: true } },
+      buyer: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
+  });
+}
+
+export async function confirmCheckout(
+  itemId: string,
+  buyerId: string,
+  sessionIdFromClient?: string,
+) {
+  const payment = await prisma.payment.findUnique({
+    where: { itemId },
+  });
+
+  if (!payment) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  if (payment.buyerId !== buyerId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+
+  if (payment.status === "COMPLETED") {
+    return payment;
+  }
+  if (payment.status === "FAILED") {
+    throw new Error(PaymentErrors.PAYMENT_EXPIRED);
+  }
+
+  const sessionId = sessionIdFromClient?.startsWith("cs_")
+    ? sessionIdFromClient
+    : payment.stripePaymentIntentId;
+  if (!sessionId?.startsWith("cs_")) {
+    throw new Error(PaymentErrors.INVALID_SESSION);
+  }
+
+  const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+  if (session.metadata?.itemId && session.metadata.itemId !== itemId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+
+  if (session.payment_status !== "paid") {
+    throw new Error(PaymentErrors.PAYMENT_NOT_PAID);
+  }
+
+  await handleCheckoutCompleted({
+    metadata: (session.metadata as Record<string, string> | null) ?? {
+      itemId,
+    },
+    payment_intent: session.payment_intent,
+  });
+
+  const updated = await prisma.payment.findUnique({ where: { itemId } });
+  if (!updated) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  return updated;
 }

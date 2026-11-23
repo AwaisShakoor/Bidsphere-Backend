@@ -13,6 +13,8 @@ export const AuctionErrors = {
   START_MUST_BE_FUTURE: "Start time must be in the future",
   END_MUST_BE_FUTURE: "End time must be in the future",
   NO_ITEMS: "Add at least one item before submitting the auction",
+  STRIPE_CONNECT_REQUIRED:
+  "Connect your Stripe account before submitting an auction",
 } as const;
 
 export function handleAuctionError(error: unknown, res: Response) {
@@ -32,7 +34,8 @@ export function handleAuctionError(error: unknown, res: Response) {
     message === AuctionErrors.TIMES_MUST_BE_FUTURE ||
     message === AuctionErrors.START_MUST_BE_FUTURE ||
     message === AuctionErrors.END_MUST_BE_FUTURE ||
-    message === AuctionErrors.NO_ITEMS
+    message === AuctionErrors.NO_ITEMS ||
+    message === AuctionErrors.STRIPE_CONNECT_REQUIRED
   ) {
     return res.status(400).json({ message });
   }
