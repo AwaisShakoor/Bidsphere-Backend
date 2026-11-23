@@ -197,6 +197,7 @@ export async function handleCheckoutCompleted(session: {
     where: { itemId, status: "PENDING" },
     data: {
       status: "COMPLETED",
+      deliveryStatus: "AWAITING_SHIPMENT",
       paidAt: new Date(),
       ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}),
     },
@@ -247,37 +248,19 @@ export async function handleCheckoutCompleted(session: {
     console.error("Buyer notification failed:", err);
   }
 
-  if (!payment.stripeTransferId && payment.seller.stripeAccountId) {
-    try {
-      const transfer = await stripe.transfers.create({
-        amount: toCents(Number(payment.sellerPayout)),
-        currency: "usd",
-        destination: payment.seller.stripeAccountId,
-      });
-
-      await prisma.payment.update({
-        where: { itemId },
-        data: { stripeTransferId: transfer.id },
-      });
-
-      await prisma.notification.create({
-        data: {
-          userId: payment.sellerId,
-          type: "AUCTION_SOLD",
-          title: "Payment received",
-          message: `Buyer completed payment for "${title}".`,
-          auctionId: payment.auctionId,
-          itemId: payment.itemId,
-        },
-      });
-    } catch (err) {
-      console.error("Stripe transfer failed:", err);
-    }
-  } else if (!payment.seller.stripeAccountId) {
-    console.error(
-      "Skip transfer: seller has no stripeAccountId",
-      payment.sellerId,
-    );
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: payment.sellerId,
+        type: "AUCTION_SOLD",
+        title: "Buyer paid — ship item",
+        message: `Buyer paid for "${title}". Mark as shipped when you send it.`,
+        auctionId: payment.auctionId,
+        itemId: payment.itemId,
+      },
+    });
+  } catch (err) {
+    console.error("Seller notification failed:", err);
   }
 }
 
@@ -293,6 +276,9 @@ export async function getMyPayouts(sellerId: string) {
       currency: true,
       status: true,
       stripeTransferId: true,
+      deliveryStatus: true,
+      shippedAt: true,
+      trackingNote: true,
       paidAt: true,
       createdAt: true,
       item: { select: { id: true, title: true } },
@@ -307,7 +293,7 @@ export async function getMyPayouts(sellerId: string) {
 export async function confirmCheckout(
   itemId: string,
   buyerId: string,
-  sessionIdFromClient?: string,
+  sessionIdFromClient: string,
 ) {
   const payment = await prisma.payment.findUnique({
     where: { itemId },
@@ -356,4 +342,118 @@ export async function confirmCheckout(
     throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
   }
   return updated;
+}
+
+export async function markAsShipper(
+  itemId: string,
+  sellerId: string,
+  trackingNote?: string,
+) {
+  const payment = await prisma.payment.findUnique({ where: { itemId } });
+  if (!payment) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  if (payment.sellerId !== sellerId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+  if (
+    payment.deliveryStatus === "SHIPPED" ||
+    payment.deliveryStatus === "DELIVERED"
+  ) {
+    throw new Error(PaymentErrors.ALREADY_SHIPPED);
+  }
+
+  if (payment.deliveryStatus !== "AWAITING_SHIPMENT") {
+    throw new Error(PaymentErrors.INVALID_DELIVERY_STATE);
+  }
+
+  const updated = await prisma.payment.update({
+    where: { itemId },
+    data: {
+      deliveryStatus: "SHIPPED",
+      shippedAt: new Date(),
+      trackingNote,
+    },
+  });
+
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: payment.buyerId,
+        type: "ITEM_SHIPPED",
+        title: "Item shipped",
+        message: trackingNote
+          ? `Your item was shipped. Note: ${trackingNote}`
+          : "Your item was marked as shipped.",
+        auctionId: payment.auctionId,
+        itemId: payment.itemId,
+      },
+    });
+  } catch (err) {
+    console.error("Buyer notification failed:", err);
+  }
+
+  return updated;
+}
+
+export async function markAsDelivered(buyerId: string, itemId: string) {
+  const payment = await prisma.payment.findUnique({
+    where: { itemId },
+    include: {
+      item: { select: { title: true } },
+      seller: { select: { stripeAccountId: true } },
+    },
+  });
+  if (!payment) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  if (payment.buyerId !== buyerId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+  if (payment.status !== "COMPLETED") {
+    throw new Error(PaymentErrors.INVALID_DELIVERY_STATE);
+  }
+  if (payment.deliveryStatus !== "SHIPPED") {
+    throw new Error(PaymentErrors.INVALID_DELIVERY_STATE);
+  }
+
+  await prisma.payment.update({
+    where: { itemId },
+    data: {
+      deliveryStatus: "DELIVERED",
+      deliveredAt: new Date(),
+    },
+  });
+
+  try {
+    await prisma.notification.create({
+      data: {
+        userId: payment.sellerId,
+        type: "ITEM_DELIVERED",
+        title: "Item delivered",
+        message: `Your item "${payment.item.title}" has been delivered.`,
+        auctionId: payment.auctionId,
+        itemId: payment.itemId,
+      },
+    });
+  } catch (err) {
+    console.error("Seller notification failed:", err);
+  }
+
+  if (!payment.stripeTransferId && payment.seller.stripeAccountId) {
+    const transfer = await stripe.transfers.create({
+      amount: toCents(Number(payment.sellerPayout)),
+      currency: "usd",
+      destination: payment.seller.stripeAccountId,
+    });
+
+    return prisma.payment.update({
+      where: { itemId },
+      data: { stripeTransferId: transfer.id },
+    });
+  }
+  if (!payment.seller.stripeAccountId) {
+    throw new Error(PaymentErrors.STRIPE_NOT_CONNECTED);
+  }
+  return prisma.payment.findUnique({ where: { itemId } });
 }

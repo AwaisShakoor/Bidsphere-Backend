@@ -18,6 +18,7 @@ export async function retryPendingTransfers() {
     where: {
       status: "COMPLETED",
       stripeTransferId: null,
+      deliveryStatus: "DELIVERED",
       seller: { stripeAccountId: { not: null } },
     },
     select: {

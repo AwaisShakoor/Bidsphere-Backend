@@ -5,9 +5,16 @@ import {
   getItemPayment,
   getMyPayments,
   getMyPayouts,
+  markAsDelivered,
+  markAsShipper,
 } from "./payment.service";
 import { handlePaymentError } from "./payment.errors";
-import { createConnectOnboardingLink, createConnectWithdraw, getConnectBalance, getConnectionStatus } from "./payment.connect.service";
+import {
+  createConnectOnboardingLink,
+  createConnectWithdraw,
+  getConnectBalance,
+  getConnectionStatus,
+} from "./payment.connect.service";
 
 export async function createCheckoutController(req: Request, res: Response) {
   try {
@@ -59,11 +66,16 @@ export async function createConnectOnboardingLinkController(
   }
 }
 
-export async function getConnectionStatusController(req: Request, res: Response) {
+export async function getConnectionStatusController(
+  req: Request,
+  res: Response,
+) {
   try {
     const userId = req.user!.userId;
     const result = await getConnectionStatus(userId);
-    return res.status(200).json({ message: "Connection status retrieved successfully", result });
+    return res
+      .status(200)
+      .json({ message: "Connection status retrieved successfully", result });
   } catch (error) {
     return handlePaymentError(error, res);
   }
@@ -115,6 +127,31 @@ export async function confirmCheckoutController(req: Request, res: Response) {
       typeof req.body?.sessionId === "string" ? req.body.sessionId : undefined;
     const payment = await confirmCheckout(itemId, buyerId, sessionId);
     return res.status(200).json({ payment });
+  } catch (error) {
+    return handlePaymentError(error, res);
+  }
+}
+
+export async function markAsShippedController(req: Request, res: Response) {
+  try {
+    const sellerId = req.user!.userId;
+    const itemId = req.params.itemId as string;
+    const trackingNote = req.body?.trackingNote as string | undefined;
+    const payment = await markAsShipper(itemId, sellerId, trackingNote);
+    return res.status(200).json({ message: "Item marked as shipped", payment });
+  } catch (error) {
+    return handlePaymentError(error, res);
+  }
+}
+
+export async function markAsDeliveredController(req: Request, res: Response) {
+  try {
+    const buyerId = req.user!.userId;
+    const itemId = req.params.itemId as string;
+    const payment = await markAsDelivered(buyerId, itemId);
+    return res
+      .status(200)
+      .json({ message: "Item marked as delivered", payment });
   } catch (error) {
     return handlePaymentError(error, res);
   }
