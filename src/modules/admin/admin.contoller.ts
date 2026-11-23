@@ -5,9 +5,12 @@ import {
   getAllAuctions,
   getAuctionById,
   getOverviews,
+  getRefundPayments,
   getUsers,
   rejectAuction,
 } from "./admin.service";
+import { adminFullRefund } from "../payment/payment.service";
+import { handlePaymentError } from "../payment/payment.errors";
 
 export async function getUsersController(req: Request, res: Response) {
   try {
@@ -127,5 +130,36 @@ export async function getOverviewsController(req: Request, res: Response) {
     }
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function adminRefundPaymentController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const itemId = req.params.itemId as string;
+    const payment = await adminFullRefund(itemId);
+    res.status(200).json({
+      success: true,
+      message: "Payment refunded successfully",
+      data: payment,
+    });
+  } catch (error) {
+    return handlePaymentError(error, res);
+  }
+}
+
+export async function getRefundPaymentsController(
+  _req: Request,
+  res: Response,
+) {
+  try {
+    const payments = await getRefundPayments();
+    return res
+      .status(200)
+      .json({ message: "Payments retrieved successfully", data: payments });
+  } catch (error) {
+    return handlePaymentError(error, res);
   }
 }

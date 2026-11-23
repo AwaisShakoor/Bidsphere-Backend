@@ -108,4 +108,46 @@ export const adminPaths = {
       },
     },
   },
+
+  "/api/admin/payments/{itemId}/refund": {
+    post: {
+      tags: ["Admin"],
+      summary: "Full refund a payment before the item is shipped (admin)",
+      description:
+        "Refunds the full paid amount via Stripe. Only allowed when payment is COMPLETED and delivery status is AWAITING_SHIPMENT.",
+      parameters: [
+        {
+          name: "itemId",
+          in: "path",
+          required: true,
+          description: "Item ID of the payment to refund",
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: { description: "Payment refunded successfully" },
+        400: {
+          description:
+            "not paid / already shipped or delivered / already refunded / Stripe refund failed",
+        },
+        401: { description: "Unauthorized" },
+        403: { description: "Forbidden — admin only" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/admin/payments": {
+    get: {
+      tags: ["Admin"],
+      summary: "List payments (admin)",
+      description:
+        "Returns all payments. Each item includes refundable (COMPLETED + AWAITING_SHIPMENT).",
+      responses: {
+        200: { description: "Payments retrieved successfully" },
+        401: { description: "Unauthorized" },
+        403: { description: "Forbidden — admin only" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
 };

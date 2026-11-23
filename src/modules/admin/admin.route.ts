@@ -1,9 +1,11 @@
 import { Router } from "express";
 import {
+  adminRefundPaymentController,
   approveAuctionController,
   getAllAuctionsController,
   getAuctionByIdController,
   getOverviewsController,
+  getRefundPaymentsController,
   getUsersController,
   rejectAuctionController,
 } from "./admin.contoller";
@@ -42,6 +44,18 @@ adminRouter.get(
   authMiddleware,
   adminMiddleware,
   getOverviewsController,
+);
+adminRouter.post(
+  "/payments/:itemId/refund",
+  authMiddleware,
+  adminMiddleware,
+  adminRefundPaymentController,
+);
+adminRouter.get(
+  "/payments",
+  authMiddleware,
+  adminMiddleware,
+  getRefundPaymentsController,
 );
 
 export default adminRouter;

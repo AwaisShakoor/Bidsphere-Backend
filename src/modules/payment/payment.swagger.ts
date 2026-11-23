@@ -196,4 +196,48 @@ export const paymentPaths = {
       },
     },
   },
+  "/api/payments/items/{itemId}/refund-request": {
+    post: {
+      tags: ["Payments"],
+      summary: "Buyer requests a refund (before item is shipped)",
+      description:
+        "Sets refundRequestedAt and refundRequestReason on the payment. Only the buyer. Only when COMPLETED + AWAITING_SHIPMENT.",
+      parameters: [
+        {
+          in: "path",
+          name: "itemId",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              required: ["reason"],
+              properties: {
+                reason: {
+                  type: "string",
+                  example: "Changed my mind before shipping",
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: "Refund requested successfully" },
+        400: {
+          description:
+            "Reason required / not paid / already shipped / already requested / already refunded",
+        },
+        401: { description: "Unauthorized" },
+        403: { description: "Only the buyer can request a refund" },
+        404: { description: "Payment not found" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
 };

@@ -457,3 +457,124 @@ export async function markAsDelivered(buyerId: string, itemId: string) {
   }
   return prisma.payment.findUnique({ where: { itemId } });
 }
+
+export async function adminFullRefund(itemId: string) {
+  const payment = await prisma.payment.findUnique({
+    where: { itemId },
+    include: { item: { select: { title: true } } },
+  });
+
+  if (!payment) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  if (payment.status === "REFUNDED") {
+    throw new Error(PaymentErrors.ALREADY_REFUNDED);
+  }
+  if (payment.status !== "COMPLETED") {
+    throw new Error(PaymentErrors.PAYMENT_NOT_PAID);
+  }
+  // Final rule: only before ship
+  if (payment.deliveryStatus !== "AWAITING_SHIPMENT") {
+    throw new Error(PaymentErrors.REFUND_NOT_ALLOWED);
+  }
+
+  let paymentIntentId = payment.stripePaymentIntentId;
+
+  if (paymentIntentId.startsWith("cs_")) {
+    const session = await stripe.checkout.sessions.retrieve(paymentIntentId);
+    const pi = session.payment_intent;
+    paymentIntentId = typeof pi === "string" ? pi : (pi?.id ?? "");
+    if (!paymentIntentId) {
+      throw new Error(PaymentErrors.INVALID_SESSION);
+    }
+  }
+
+  try {
+    await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      reason: "requested_by_customer",
+    });
+  } catch (err) {
+    console.error("Stripe refund failed", err);
+    throw new Error(PaymentErrors.REFUND_FAILED);
+  }
+
+  const amount = Number(payment.amount);
+
+  const updated = await prisma.payment.update({
+    where: { itemId },
+    data: {
+      status: "REFUNDED",
+      refundAmount: amount,
+      refundReason: payment.refundRequestReason,
+      refundedAt: new Date(),
+      refundRequestedAt: null,
+      refundRequestReason: null,
+    },
+  });
+
+  const title = payment.item.title;
+  try {
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: payment.buyerId,
+          type: "PAYMENT_REFUNDED",
+          title: "Payment refunded",
+          message: `Your payment for "${title}" was refunded.`,
+          auctionId: payment.auctionId,
+          itemId: payment.itemId,
+        },
+        {
+          userId: payment.sellerId,
+          type: "PAYMENT_REFUNDED",
+          title: "Order refunded",
+          message: `Payment for "${title}" was refunded by admin.`,
+          auctionId: payment.auctionId,
+          itemId: payment.itemId,
+        },
+      ],
+    });
+  } catch (err) {
+    console.error("Refund notification failed:", err);
+  }
+
+  return updated;
+}
+
+export async function requestRefund(
+  itemId: string,
+  buyerId: string,
+  reason: string,
+) {
+  const payment = await prisma.payment.findUnique({
+    where: { itemId },
+  });
+
+  if (!payment) {
+    throw new Error(PaymentErrors.PAYMENT_NOT_FOUND);
+  }
+  if (payment.buyerId !== buyerId) {
+    throw new Error(PaymentErrors.FORBIDDEN);
+  }
+  if (payment.status === "REFUNDED") {
+    throw new Error(PaymentErrors.ALREADY_REFUNDED);
+  }
+  if (payment.status !== "COMPLETED") {
+    throw new Error(PaymentErrors.PAYMENT_NOT_PAID);
+  }
+  if (payment.deliveryStatus !== "AWAITING_SHIPMENT") {
+    throw new Error(PaymentErrors.REFUND_NOT_ALLOWED);
+  }
+  if (payment.refundRequestedAt) {
+    throw new Error(PaymentErrors.REFUND_ALREADY_REQUESTED);
+  }
+
+  return prisma.payment.update({
+    where: { itemId },
+    data: {
+      refundRequestedAt: new Date(),
+      refundRequestReason: reason,
+    },
+  });
+}

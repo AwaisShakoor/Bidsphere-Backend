@@ -240,3 +240,26 @@ export async function getOverviews() {
     },
   };
 }
+
+export async function getRefundPayments() {
+  const payments = await prisma.payment.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      item: { select: { id: true, title: true } },
+      auction: { select: { id: true, title: true } },
+      buyer: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+      seller: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
+  });
+
+  return payments.map((payment) => ({
+    ...payment,
+    refundable:
+      payment.status === "COMPLETED" &&
+      payment.deliveryStatus === "AWAITING_SHIPMENT",
+  }));
+}

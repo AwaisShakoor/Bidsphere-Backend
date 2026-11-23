@@ -12,6 +12,7 @@ import {
   getMyPayoutsController,
   markAsDeliveredController,
   markAsShippedController,
+  requestRefundController,
 } from "./payment.controller";
 
 const paymentRouter = Router();
@@ -63,6 +64,11 @@ paymentRouter.post(
   "/payments/items/:itemId/deliver",
   authMiddleware,
   markAsDeliveredController,
+);
+paymentRouter.post(
+  "/payments/items/:itemId/refund-request",
+  authMiddleware,
+  requestRefundController,
 );
 
 export default paymentRouter;
