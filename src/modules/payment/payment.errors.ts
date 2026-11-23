@@ -16,6 +16,8 @@ export const PaymentErrors = {
   STRIPE_WITHDRAW_FAILED: "Stripe withdraw failed",
   PAYMENT_NOT_PAID: "Payment is not completed on Stripe yet",
   INVALID_SESSION: "Invalid or missing Stripe checkout session",
+  INVALID_DELIVERY_STATE: "Invalid delivery state for this action",
+  ALREADY_SHIPPED: "Item already marked as shipped",
 } as const;
 
 export function handlePaymentError(error: unknown, res: Response) {
@@ -47,7 +49,9 @@ export function handlePaymentError(error: unknown, res: Response) {
     message === PaymentErrors.INVALID_WITHDRAW_AMOUNT ||
     message === PaymentErrors.STRIPE_WITHDRAW_FAILED ||
     message === PaymentErrors.PAYMENT_NOT_PAID ||
-    message === PaymentErrors.INVALID_SESSION
+    message === PaymentErrors.INVALID_SESSION ||
+    message === PaymentErrors.INVALID_DELIVERY_STATE ||
+    message === PaymentErrors.ALREADY_SHIPPED
   ) {
     return res.status(400).json({ message });
   }

@@ -10,6 +10,8 @@ import {
   getItemPaymentController,
   getMyPaymentsController,
   getMyPayoutsController,
+  markAsDeliveredController,
+  markAsShippedController,
 } from "./payment.controller";
 
 const paymentRouter = Router();
@@ -51,6 +53,16 @@ paymentRouter.post(
   "/payments/items/:itemId/confirm",
   authMiddleware,
   confirmCheckoutController,
+);
+paymentRouter.post(
+  "/payments/items/:itemId/ship",
+  authMiddleware,
+  markAsShippedController,
+);
+paymentRouter.post(
+  "/payments/items/:itemId/deliver",
+  authMiddleware,
+  markAsDeliveredController,
 );
 
 export default paymentRouter;

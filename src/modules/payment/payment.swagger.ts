@@ -120,22 +120,6 @@ export const paymentPaths = {
           schema: { type: "string", format: "uuid" },
         },
       ],
-      requestBody: {
-        required: false,
-        content: {
-          "application/json": {
-            schema: {
-              type: "object",
-              properties: {
-                sessionId: {
-                  type: "string",
-                  description: "Checkout session id from success URL",
-                },
-              },
-            },
-          },
-        },
-      },
       responses: {
         200: { description: "Payment confirmed / already completed" },
         400: {
@@ -143,6 +127,70 @@ export const paymentPaths = {
         },
         401: { description: "Unauthorized" },
         403: { description: "Not the buyer for this payment" },
+        404: { description: "Payment not found" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/payments/items/{itemId}/ship": {
+    post: {
+      tags: ["Payments"],
+      summary:
+        "Seller marks item as shipped (holds payout until delivery confirm)",
+      parameters: [
+        {
+          in: "path",
+          name: "itemId",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                trackingNote: {
+                  type: "string",
+                  description: "Optional courier / tracking note",
+                },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: { description: "Marked as shipped" },
+        400: { description: "Invalid delivery state / already shipped" },
+        401: { description: "Unauthorized" },
+        403: { description: "Only the seller can mark shipped" },
+        404: { description: "Payment not found" },
+        500: { description: "Internal server error" },
+      },
+    },
+  },
+  "/api/payments/items/{itemId}/deliver": {
+    post: {
+      tags: ["Payments"],
+      summary: "Buyer confirms delivery and releases seller payout transfer",
+      parameters: [
+        {
+          in: "path",
+          name: "itemId",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses: {
+        200: { description: "Marked as delivered; payout transfer released" },
+        400: {
+          description:
+            "Invalid delivery state (must be SHIPPED) / Stripe not connected",
+        },
+        401: { description: "Unauthorized" },
+        403: { description: "Only the buyer can confirm delivery" },
         404: { description: "Payment not found" },
         500: { description: "Internal server error" },
       },

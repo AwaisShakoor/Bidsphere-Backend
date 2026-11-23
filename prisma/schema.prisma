@@ -71,6 +71,8 @@ enum NotificationType {
   AUCTION_ENDING_SOON @map("auction_ending_soon")
   AUCTION_APPROVED    @map("auction_approved")
   AUCTION_REJECTED    @map("auction_rejected")
+  ITEM_SHIPPED        @map("item_shipped")
+  ITEM_DELIVERED      @map("item_delivered")
 
   @@map("notification_type")
 }
@@ -82,6 +84,14 @@ enum PaymentStatus {
   FAILED    @map("failed")
 
   @@map("payment_status")
+}
+
+enum DeliveryStatus {
+  AWAITING_SHIPMENT @map("awaiting_shipment")
+  SHIPPED           @map("shipped")
+  DELIVERED         @map("delivered")
+
+  @@map("delivery_status")
 }
 
 // ==========================================
@@ -96,7 +106,7 @@ model User {
   passwordHash String    @map("password_hash") @db.VarChar(255)
   role         UserRole  @default(BUYER) @map("role")
   isActive     Boolean   @default(true) @map("is_active")
-  stripeAccountId String? @unique("stripe_account_id")
+  stripeAccountId String? @unique @map("stripe_account_id")
   passwordResetOtpHash      String?   @map("password_reset_otp_hash") @db.VarChar(255)
   passwordResetOtpExpiresAt DateTime? @map("password_reset_otp_expires_at") @db.Timestamptz()
   passwordResetOtpAttempts  Int       @default(0) @map("password_reset_otp_attempts")
@@ -265,6 +275,10 @@ model Payment {
   refundedAt            DateTime?     @map("refunded_at") @db.Timestamptz()
   paymentDeadline       DateTime      @map("payment_deadline") @db.Timestamptz()
   runnerUpNotified      Boolean       @default(false) @map("runner_up_notified")
+  deliveryStatus        DeliveryStatus? @map("delivery_status")
+  shippedAt             DateTime?       @map("shipped_at") @db.Timestamptz()
+  deliveredAt           DateTime?       @map("delivered_at") @db.Timestamptz()
+  trackingNote          String?         @map("tracking_note") @db.VarChar(255)
   paidAt                DateTime?     @map("paid_at") @db.Timestamptz()
   createdAt             DateTime      @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt             DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
@@ -281,4 +295,5 @@ seller  User    @relation("SellerPayments", fields: [sellerId], references: [id]
   @@index([sellerId])
   @@index([status])
   @@map("payments")
+  @@index([deliveryStatus])
 }
