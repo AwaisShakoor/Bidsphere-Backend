@@ -19,7 +19,9 @@ export async function getUsers() {
 
 export async function getAllAuctions() {
   return prisma.auction.findMany({
-    where: { status: "PENDING_APPROVAL" },
+    where: {
+      status: { in: ["PENDING_APPROVAL", "LIVE", "REJECTED", "COMPLETED"] },
+    },
     select: {
       id: true,
       status: true,
@@ -239,4 +241,27 @@ export async function getOverviews() {
       buyers,
     },
   };
+}
+
+export async function getRefundPayments() {
+  const payments = await prisma.payment.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      item: { select: { id: true, title: true } },
+      auction: { select: { id: true, title: true } },
+      buyer: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+      seller: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
+  });
+
+  return payments.map((payment) => ({
+    ...payment,
+    refundable:
+      payment.status === "COMPLETED" &&
+      payment.deliveryStatus === "AWAITING_SHIPMENT",
+  }));
 }

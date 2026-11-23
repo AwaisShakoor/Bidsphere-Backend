@@ -18,6 +18,11 @@ export const PaymentErrors = {
   INVALID_SESSION: "Invalid or missing Stripe checkout session",
   INVALID_DELIVERY_STATE: "Invalid delivery state for this action",
   ALREADY_SHIPPED: "Item already marked as shipped",
+  ALREADY_REFUNDED: "Payment already refunded",
+  REFUND_NOT_ALLOWED: "Refund only allowed before the item is shipped",
+  REFUND_FAILED: "Stripe refund failed",
+  REFUND_ALREADY_REQUESTED: "Refund already requested",
+  
 } as const;
 
 export function handlePaymentError(error: unknown, res: Response) {
@@ -51,7 +56,11 @@ export function handlePaymentError(error: unknown, res: Response) {
     message === PaymentErrors.PAYMENT_NOT_PAID ||
     message === PaymentErrors.INVALID_SESSION ||
     message === PaymentErrors.INVALID_DELIVERY_STATE ||
-    message === PaymentErrors.ALREADY_SHIPPED
+    message === PaymentErrors.ALREADY_SHIPPED ||
+    message === PaymentErrors.ALREADY_REFUNDED ||
+    message === PaymentErrors.REFUND_NOT_ALLOWED ||
+    message === PaymentErrors.REFUND_FAILED ||
+    message === PaymentErrors.REFUND_ALREADY_REQUESTED
   ) {
     return res.status(400).json({ message });
   }

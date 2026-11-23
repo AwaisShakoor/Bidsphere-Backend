@@ -7,6 +7,7 @@ import {
   getMyPayouts,
   markAsDelivered,
   markAsShipper,
+  requestRefund,
 } from "./payment.service";
 import { handlePaymentError } from "./payment.errors";
 import {
@@ -152,6 +153,20 @@ export async function markAsDeliveredController(req: Request, res: Response) {
     return res
       .status(200)
       .json({ message: "Item marked as delivered", payment });
+  } catch (error) {
+    return handlePaymentError(error, res);
+  }
+}
+
+export async function requestRefundController(req: Request, res: Response) {
+  try {
+    const buyerId = req.user!.userId;
+    const itemId = req.params.itemId as string;
+    const reason = (req.body?.reason as string) ?? "";
+    const payment = await requestRefund(itemId, buyerId, reason);
+    return res
+      .status(200)
+      .json({ message: "Refund requested successfully", payment });
   } catch (error) {
     return handlePaymentError(error, res);
   }
